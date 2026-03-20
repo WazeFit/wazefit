@@ -3,6 +3,11 @@ main = "src/index.ts"
 compatibility_date = "2024-12-30"
 compatibility_flags = ["nodejs_compat"]
 
+# ── Deploy targets ──
+# workers.dev: wazefit-api.wazefit.workers.dev
+# Custom domain (futuro):
+# routes = [{ pattern = "api.wazefit.com/*", zone_name = "wazefit.com" }]
+
 # ── D1 Database ──
 [[d1_databases]]
 binding = "DB"
