@@ -4,6 +4,7 @@ import { corsMiddleware } from './middleware/cors'
 import { loggerMiddleware } from './middleware/logger'
 import { errorHandler } from './middleware/error'
 import { auth } from './routes/auth'
+import { alunosRouter } from './routes/alunos'
 
 // ── App principal ──
 const app = new Hono<{
@@ -28,7 +29,7 @@ app.get('/ping', (c) => {
 
 // ── Rotas da API ──
 app.route('/api/v1/auth', auth)
-// app.route('/api/v1/alunos', alunosRoutes)
+app.route('/api/v1/alunos', alunosRouter)
 // app.route('/api/v1/exercicios', exerciciosRoutes)
 // app.route('/api/v1/fichas', fichasRoutes)
 // app.route('/api/v1/execucoes', execucoesRoutes)
