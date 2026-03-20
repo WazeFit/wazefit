@@ -5,7 +5,11 @@ import { useState } from 'react'
 import { useAuth } from '../../stores/auth'
 import { ApiClientError } from '../../lib/api'
 
-export function LoginPage() {
+interface LoginPageProps {
+  onNavigate: (path: string) => void
+}
+
+export function LoginPage({ onNavigate }: LoginPageProps) {
   const { login } = useAuth()
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
@@ -19,7 +23,7 @@ export function LoginPage() {
 
     try {
       await login(email, senha)
-      window.location.href = '/dashboard'
+      onNavigate('/dashboard')
     } catch (err) {
       if (err instanceof ApiClientError) {
         setErro(err.data.error)
@@ -34,7 +38,6 @@ export function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-950 px-4">
       <div className="w-full max-w-md">
-        {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 mb-4">
             <div className="w-10 h-10 bg-brand-500 rounded-xl flex items-center justify-center font-bold text-lg">
@@ -47,7 +50,6 @@ export function LoginPage() {
           <p className="text-gray-400">Entre na sua conta</p>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           {erro && (
             <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-red-400 text-sm">
@@ -96,9 +98,12 @@ export function LoginPage() {
 
         <p className="text-center text-gray-500 text-sm mt-6">
           Não tem conta?{' '}
-          <a href="/register" className="text-brand-400 hover:text-brand-300 transition-colors">
+          <button
+            onClick={() => onNavigate('/register')}
+            className="text-brand-400 hover:text-brand-300 transition-colors"
+          >
             Criar conta
-          </a>
+          </button>
         </p>
       </div>
     </div>

@@ -3,11 +3,14 @@
  */
 import { useAuth } from '../../stores/auth'
 
+interface SidebarProps {
+  onNavigate: (path: string) => void
+}
+
 interface NavItem {
   label: string
   icon: string
   href: string
-  active?: boolean
 }
 
 const navItems: NavItem[] = [
@@ -19,19 +22,24 @@ const navItems: NavItem[] = [
   { label: 'Financeiro', icon: '💰', href: '/financeiro' },
 ]
 
-export function Sidebar() {
+export function Sidebar({ onNavigate }: SidebarProps) {
   const { user, tenant, logout } = useAuth()
   const currentPath = window.location.pathname
+
+  const handleLogout = async () => {
+    await logout()
+    onNavigate('/login')
+  }
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 bg-gray-900 border-r border-gray-800 flex flex-col z-40">
       {/* Logo */}
       <div className="p-5 border-b border-gray-800">
-        <div className="flex items-center gap-2">
+        <button onClick={() => onNavigate('/dashboard')} className="flex items-center gap-2">
           <div className="w-8 h-8 bg-brand-500 rounded-lg flex items-center justify-center font-bold text-sm">
             W
           </div>
-          <div>
+          <div className="text-left">
             <span className="text-lg font-bold">
               Waze<span className="text-brand-400">Fit</span>
             </span>
@@ -39,7 +47,7 @@ export function Sidebar() {
               {tenant?.nome || 'Painel Expert'}
             </p>
           </div>
-        </div>
+        </button>
       </div>
 
       {/* Nav */}
@@ -47,10 +55,10 @@ export function Sidebar() {
         {navItems.map((item) => {
           const isActive = currentPath === item.href || currentPath.startsWith(item.href + '/')
           return (
-            <a
+            <button
               key={item.href}
-              href={item.href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+              onClick={() => onNavigate(item.href)}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
                 isActive
                   ? 'bg-brand-500/10 text-brand-400 font-medium'
                   : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'
@@ -58,7 +66,7 @@ export function Sidebar() {
             >
               <span className="text-lg">{item.icon}</span>
               {item.label}
-            </a>
+            </button>
           )
         })}
       </nav>
@@ -75,7 +83,7 @@ export function Sidebar() {
           </div>
         </div>
         <button
-          onClick={() => logout()}
+          onClick={handleLogout}
           className="w-full mt-2 flex items-center gap-2 px-3 py-2 text-sm text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
         >
           <span>🚪</span>

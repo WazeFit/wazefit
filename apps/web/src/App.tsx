@@ -1,9 +1,9 @@
 /**
- * App — Router principal.
- * Redireciona baseado no estado de auth.
+ * App — Router principal com navegação SPA (sem reload).
  */
 import { useEffect } from 'react'
 import { useAuth } from './stores/auth'
+import { useRouter } from './hooks/useRouter'
 import { LoginPage } from './pages/auth/LoginPage'
 import { RegisterPage } from './pages/auth/RegisterPage'
 import { DashboardPage } from './pages/expert/DashboardPage'
@@ -11,7 +11,7 @@ import { ExpertLayout } from './components/ui/ExpertLayout'
 
 function Router() {
   const { isAuthenticated, isLoading, loadUser } = useAuth()
-  const path = window.location.pathname
+  const { path, navigate } = useRouter()
 
   useEffect(() => {
     loadUser()
@@ -30,26 +30,38 @@ function Router() {
   }
 
   // Rotas públicas
-  if (path === '/login') return <LoginPage />
-  if (path === '/register') return <RegisterPage />
+  if (path === '/login') {
+    if (isAuthenticated) {
+      navigate('/dashboard')
+      return null
+    }
+    return <LoginPage onNavigate={navigate} />
+  }
+
+  if (path === '/register') {
+    if (isAuthenticated) {
+      navigate('/dashboard')
+      return null
+    }
+    return <RegisterPage onNavigate={navigate} />
+  }
 
   // Redirect se não autenticado
   if (!isAuthenticated) {
-    // Se está na landing, mostrar landing
-    if (path === '/') return <LandingPage />
-    window.location.href = '/login'
+    if (path === '/') return <LandingPage onNavigate={navigate} />
+    navigate('/login')
     return null
   }
 
   // Redirect root para dashboard
   if (path === '/') {
-    window.location.href = '/dashboard'
+    navigate('/dashboard')
     return null
   }
 
   // Rotas protegidas (Expert)
   return (
-    <ExpertLayout>
+    <ExpertLayout onNavigate={navigate}>
       {path === '/dashboard' && <DashboardPage />}
       {path.startsWith('/alunos') && <PlaceholderPage title="Alunos" icon="👥" />}
       {path.startsWith('/exercicios') && <PlaceholderPage title="Exercícios" icon="🏋️" />}
@@ -60,7 +72,6 @@ function Router() {
   )
 }
 
-// ── Placeholder para páginas futuras ──
 function PlaceholderPage({ title, icon }: { title: string; icon: string }) {
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
@@ -71,8 +82,7 @@ function PlaceholderPage({ title, icon }: { title: string; icon: string }) {
   )
 }
 
-// ── Landing Page (reuso simplificado) ──
-function LandingPage() {
+function LandingPage({ onNavigate }: { onNavigate: (path: string) => void }) {
   return (
     <div className="min-h-screen flex flex-col bg-gray-950 text-white">
       <header className="fixed top-0 w-full z-50 bg-gray-950/80 backdrop-blur-md border-b border-gray-800/50">
@@ -86,18 +96,18 @@ function LandingPage() {
             </span>
           </div>
           <div className="flex items-center gap-3">
-            <a
-              href="/login"
+            <button
+              onClick={() => onNavigate('/login')}
               className="text-sm text-gray-400 hover:text-white transition-colors"
             >
               Entrar
-            </a>
-            <a
-              href="/register"
+            </button>
+            <button
+              onClick={() => onNavigate('/register')}
               className="text-sm bg-brand-500 hover:bg-brand-600 text-white px-4 py-2 rounded-lg transition-colors"
             >
               Criar conta
-            </a>
+            </button>
           </div>
         </div>
       </header>
@@ -122,18 +132,18 @@ function LandingPage() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <a
-              href="/register"
+            <button
+              onClick={() => onNavigate('/register')}
               className="px-8 py-3 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-xl transition-all hover:shadow-lg hover:shadow-brand-500/25"
             >
               Começar grátis
-            </a>
-            <a
-              href="/login"
+            </button>
+            <button
+              onClick={() => onNavigate('/login')}
               className="px-8 py-3 bg-gray-800 hover:bg-gray-700 text-white font-semibold rounded-xl transition-all"
             >
               Já tenho conta
-            </a>
+            </button>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-16 max-w-2xl mx-auto">

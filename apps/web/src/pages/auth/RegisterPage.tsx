@@ -5,7 +5,11 @@ import { useState } from 'react'
 import { useAuth } from '../../stores/auth'
 import { ApiClientError } from '../../lib/api'
 
-export function RegisterPage() {
+interface RegisterPageProps {
+  onNavigate: (path: string) => void
+}
+
+export function RegisterPage({ onNavigate }: RegisterPageProps) {
   const { register } = useAuth()
   const [form, setForm] = useState({
     nome: '',
@@ -28,7 +32,7 @@ export function RegisterPage() {
 
     try {
       await register(form)
-      window.location.href = '/dashboard'
+      onNavigate('/dashboard')
     } catch (err) {
       if (err instanceof ApiClientError) {
         setErro(err.data.error)
@@ -43,7 +47,6 @@ export function RegisterPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-950 px-4 py-8">
       <div className="w-full max-w-md">
-        {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 mb-4">
             <div className="w-10 h-10 bg-brand-500 rounded-xl flex items-center justify-center font-bold text-lg">
@@ -56,7 +59,6 @@ export function RegisterPage() {
           <p className="text-gray-400">Crie sua conta profissional</p>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           {erro && (
             <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-red-400 text-sm">
@@ -80,10 +82,7 @@ export function RegisterPage() {
           </div>
 
           <div>
-            <label
-              htmlFor="nome_negocio"
-              className="block text-sm font-medium text-gray-300 mb-1.5"
-            >
+            <label htmlFor="nome_negocio" className="block text-sm font-medium text-gray-300 mb-1.5">
               Nome do negócio
             </label>
             <input
@@ -98,11 +97,11 @@ export function RegisterPage() {
           </div>
 
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1.5">
+            <label htmlFor="reg-email" className="block text-sm font-medium text-gray-300 mb-1.5">
               Email
             </label>
             <input
-              id="email"
+              id="reg-email"
               type="email"
               value={form.email}
               onChange={(e) => update('email', e.target.value)}
@@ -113,15 +112,15 @@ export function RegisterPage() {
           </div>
 
           <div>
-            <label htmlFor="senha" className="block text-sm font-medium text-gray-300 mb-1.5">
+            <label htmlFor="reg-senha" className="block text-sm font-medium text-gray-300 mb-1.5">
               Senha
             </label>
             <input
-              id="senha"
+              id="reg-senha"
               type="password"
               value={form.senha}
               onChange={(e) => update('senha', e.target.value)}
-              placeholder="Mínimo 8 caracteres, 1 maiúscula, 1 número"
+              placeholder="Mínimo 8 chars, 1 maiúscula, 1 número"
               required
               minLength={8}
               className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors"
@@ -130,8 +129,7 @@ export function RegisterPage() {
 
           <div>
             <label htmlFor="telefone" className="block text-sm font-medium text-gray-300 mb-1.5">
-              Telefone{' '}
-              <span className="text-gray-500 font-normal">(opcional)</span>
+              Telefone <span className="text-gray-500 font-normal">(opcional)</span>
             </label>
             <input
               id="telefone"
@@ -154,9 +152,12 @@ export function RegisterPage() {
 
         <p className="text-center text-gray-500 text-sm mt-6">
           Já tem conta?{' '}
-          <a href="/login" className="text-brand-400 hover:text-brand-300 transition-colors">
+          <button
+            onClick={() => onNavigate('/login')}
+            className="text-brand-400 hover:text-brand-300 transition-colors"
+          >
             Entrar
-          </a>
+          </button>
         </p>
       </div>
     </div>
