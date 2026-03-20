@@ -94,13 +94,13 @@ export const useAuth = create<AuthState>((set) => ({
   login: async (email, senha) => {
     const data = await api.post<AuthResponse>('/api/v1/auth/login', { email, senha })
     setTokens(data.access_token, data.refresh_token)
-    set({ user: data.user, tenant: data.tenant, isAuthenticated: true })
+    set({ user: data.user, tenant: data.tenant, isAuthenticated: true, isLoading: false })
   },
 
   register: async (registerData) => {
     const data = await api.post<AuthResponse>('/api/v1/auth/register', registerData)
     setTokens(data.access_token, data.refresh_token)
-    set({ user: data.user, tenant: data.tenant, isAuthenticated: true })
+    set({ user: data.user, tenant: data.tenant, isAuthenticated: true, isLoading: false })
   },
 
   logout: async () => {
@@ -114,6 +114,13 @@ export const useAuth = create<AuthState>((set) => ({
   },
 
   loadUser: async () => {
+    // Se já tem user carregado (via login/register), só desligar loading
+    const state = useAuth.getState()
+    if (state.user) {
+      set({ isLoading: false })
+      return
+    }
+
     if (!getAccessToken()) {
       set({ isLoading: false, isAuthenticated: false })
       return
