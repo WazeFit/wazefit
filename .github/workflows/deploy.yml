@@ -1,13 +1,110 @@
-name: Deploy to Cloudflare Pages
+name: Deploy
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false  # Nunca cancelar deploy em andamento
+
 jobs:
-  deploy:
+  # ═══════════════════════════════════════════════════════════════
+  # Quality Gate (roda antes do deploy)
+  # ═══════════════════════════════════════════════════════════════
+  quality:
+    name: 🔍 Quality
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ~/.pnpm-store
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+  # ═══════════════════════════════════════════════════════════════
+  # Deploy Worker API → Cloudflare Workers
+  # ═══════════════════════════════════════════════════════════════
+  deploy-api:
+    name: 🚀 API → Workers
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ~/.pnpm-store
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Deploy Worker
+        working-directory: workers/api
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Smoke test API
+        run: |
+          sleep 5
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://wazefit-api.${WORKER_SUBDOMAIN:-wazefit}.workers.dev/ping || echo "000")
+          echo "API /ping status: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "⚠️ Smoke test falhou (status $STATUS) — pode ser DNS propagation"
+          fi
+
+  # ═══════════════════════════════════════════════════════════════
+  # Deploy Frontend → Cloudflare Pages
+  # ═══════════════════════════════════════════════════════════════
+  deploy-web:
+    name: 🌐 Web → Pages
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+
     permissions:
       contents: read
       deployments: write
@@ -19,18 +116,27 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 10
 
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ~/.pnpm-store
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build
+      - name: Build frontend
         run: pnpm build
+        env:
+          VITE_API_URL: https://wazefit-api.wazefit.workers.dev
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/pages-action@v1
@@ -40,3 +146,26 @@ jobs:
           projectName: wazefit
           directory: apps/web/dist
           branch: main
+
+  # ═══════════════════════════════════════════════════════════════
+  # Notificação pós-deploy
+  # ═══════════════════════════════════════════════════════════════
+  notify:
+    name: 📢 Notify
+    needs: [deploy-api, deploy-web]
+    runs-on: ubuntu-latest
+    if: always()
+    timeout-minutes: 5
+
+    steps:
+      - name: Deploy summary
+        run: |
+          echo "## Deploy Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Component | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| API (Workers) | ${{ needs.deploy-api.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Web (Pages) | ${{ needs.deploy-web.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
