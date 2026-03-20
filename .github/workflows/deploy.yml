@@ -136,7 +136,7 @@ jobs:
       - name: Build frontend
         run: pnpm build
         env:
-          VITE_API_URL: https://wazefit-api.wazefit.workers.dev
+          VITE_API_URL: https://api.wazefit.com
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/pages-action@v1
