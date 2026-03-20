@@ -2,6 +2,7 @@
   "name": "wazefit",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "description": "WazeFit — SaaS white label para nicho fitness",
   "scripts": {
     "dev": "pnpm --filter @wazefit/web dev",
@@ -9,10 +10,19 @@
     "dev:all": "pnpm --parallel --filter @wazefit/web --filter @wazefit/api dev",
     "build": "pnpm --filter @wazefit/web build",
     "typecheck": "pnpm -r typecheck",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "deploy:api": "pnpm --filter @wazefit/api deploy",
     "deploy:web": "pnpm --filter @wazefit/web build"
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.28.0",
+    "eslint": "^9.28.0",
+    "prettier": "^3.5.0",
+    "typescript-eslint": "^8.34.0"
   }
 }

@@ -11,10 +11,7 @@ export const errorHandler: ErrorHandler = (err, c) => {
 
   // Erro HTTP explícito (throw new HTTPException)
   if (err instanceof HTTPException) {
-    return c.json(
-      { error: err.message, code: err.status },
-      err.status
-    )
+    return c.json({ error: err.message, code: err.status }, err.status)
   }
 
   // Erro de validação Zod
@@ -23,15 +20,9 @@ export const errorHandler: ErrorHandler = (err, c) => {
       campo: i.path.join('.'),
       mensagem: i.message,
     }))
-    return c.json(
-      { error: 'Dados inválidos.', detalhes: issues, code: 400 },
-      400
-    )
+    return c.json({ error: 'Dados inválidos.', detalhes: issues, code: 400 }, 400)
   }
 
   // Erro genérico — nunca expor detalhes internos
-  return c.json(
-    { error: 'Erro interno do servidor.', code: 500 },
-    500
-  )
+  return c.json({ error: 'Erro interno do servidor.', code: 500 }, 500)
 }

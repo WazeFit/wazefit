@@ -47,10 +47,7 @@ app.get('/ping', (c) => {
 
 // ── 404 fallback ──
 app.notFound((c) => {
-  return c.json(
-    { error: 'Rota não encontrada.', code: 404 },
-    404
-  )
+  return c.json({ error: 'Rota não encontrada.', code: 404 }, 404)
 })
 
 export default app

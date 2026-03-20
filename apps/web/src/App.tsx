@@ -1,15 +1,15 @@
-import { useState } from "react";
+import { useState } from 'react'
 
 export function App() {
-  const [email, setEmail] = useState("");
-  const [submitted, setSubmitted] = useState(false);
+  const [email, setEmail] = useState('')
+  const [submitted, setSubmitted] = useState(false)
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
     if (email.trim()) {
-      setSubmitted(true);
+      setSubmitted(true)
     }
-  };
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -43,15 +43,15 @@ export function App() {
 
           {/* Headline */}
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold leading-tight mb-6">
-            Sua plataforma fitness{" "}
+            Sua plataforma fitness{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-emerald-300">
               completa
             </span>
           </h1>
 
           <p className="text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-            Gerencie alunos, crie treinos personalizados, acompanhe evolução e
-            escale seu negócio fitness. Tudo em um só lugar.
+            Gerencie alunos, crie treinos personalizados, acompanhe evolução e escale seu negócio
+            fitness. Tudo em um só lugar.
           </p>
 
           {/* CTA */}
@@ -77,22 +77,18 @@ export function App() {
             </form>
           ) : (
             <div className="bg-brand-500/10 border border-brand-500/20 rounded-xl px-6 py-4 max-w-md mx-auto">
-              <p className="text-brand-400 font-medium">
-                🎉 Massa! Você está na lista.
-              </p>
-              <p className="text-gray-400 text-sm mt-1">
-                Vamos te avisar quando lançarmos.
-              </p>
+              <p className="text-brand-400 font-medium">🎉 Massa! Você está na lista.</p>
+              <p className="text-gray-400 text-sm mt-1">Vamos te avisar quando lançarmos.</p>
             </div>
           )}
 
           {/* Features preview */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-16 max-w-2xl mx-auto">
             {[
-              { icon: "🏋️", label: "Treinos" },
-              { icon: "📊", label: "Evolução" },
-              { icon: "👥", label: "Alunos" },
-              { icon: "💰", label: "Financeiro" },
+              { icon: '🏋️', label: 'Treinos' },
+              { icon: '📊', label: 'Evolução' },
+              { icon: '👥', label: 'Alunos' },
+              { icon: '💰', label: 'Financeiro' },
             ].map((feature) => (
               <div
                 key={feature.label}
@@ -108,10 +104,8 @@ export function App() {
 
       {/* Footer */}
       <footer className="py-8 text-center text-gray-600 text-sm">
-        <p>
-          © {new Date().getFullYear()} WazeFit. Todos os direitos reservados.
-        </p>
+        <p>© {new Date().getFullYear()} WazeFit. Todos os direitos reservados.</p>
       </footer>
     </div>
-  );
+  )
 }
