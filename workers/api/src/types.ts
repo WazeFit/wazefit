@@ -17,6 +17,8 @@ export interface Env {
   // ── Queues ──
   QUEUE_NOTIFY: Queue
   QUEUE_LLM: Queue
+  QUEUE_EMAILS: Queue
+  QUEUE_WEBHOOKS: Queue
 
   // ── Secrets ──
   JWT_SECRET: string

@@ -4,37 +4,46 @@ compatibility_date = "2024-12-30"
 compatibility_flags = ["nodejs_compat"]
 
 # ── D1 Database ──
-# [[d1_databases]]
-# binding = "DB"
-# database_name = "wazefit-db"
-# database_id = "TODO_CRIAR_NA_TASK_03"
+[[d1_databases]]
+binding = "DB"
+database_name = "wazefit-db"
+database_id = "b4688d85-9150-4f89-b2c4-b22543c797fd"
 
 # ── KV Namespaces ──
-# [[kv_namespaces]]
-# binding = "KV_SESSIONS"
-# id = "TODO_CRIAR_NA_TASK_03"
+[[kv_namespaces]]
+binding = "KV_SESSIONS"
+id = "b3a8d46cf5c64b4abedd0d0b4fc57400"
 
-# [[kv_namespaces]]
-# binding = "KV_TENANTS"
-# id = "TODO_CRIAR_NA_TASK_03"
+[[kv_namespaces]]
+binding = "KV_TENANTS"
+id = "4a34005c31214145b371fad7f1c91b56"
 
-# [[kv_namespaces]]
-# binding = "KV_JOBS"
-# id = "TODO_CRIAR_NA_TASK_03"
+[[kv_namespaces]]
+binding = "KV_JOBS"
+id = "64ac02bd4b5a46b8bfef16ec46aa2eaf"
 
 # ── R2 Bucket ──
+# ⚠️ R2 precisa ser ativado no dashboard Cloudflare primeiro
 # [[r2_buckets]]
 # binding = "R2_PRIVATE"
 # bucket_name = "wazefit-private"
 
-# ── Queues ──
-# [[queues.producers]]
-# binding = "QUEUE_NOTIFY"
-# queue = "notifications"
+# ── Queues (Producers) ──
+[[queues.producers]]
+binding = "QUEUE_NOTIFY"
+queue = "wazefit-notifications"
 
-# [[queues.producers]]
-# binding = "QUEUE_LLM"
-# queue = "llm-jobs"
+[[queues.producers]]
+binding = "QUEUE_LLM"
+queue = "wazefit-llm-jobs"
 
-# [vars]
-# ENVIRONMENT = "production"
+[[queues.producers]]
+binding = "QUEUE_EMAILS"
+queue = "wazefit-emails"
+
+[[queues.producers]]
+binding = "QUEUE_WEBHOOKS"
+queue = "wazefit-webhooks"
+
+[vars]
+ENVIRONMENT = "production"
