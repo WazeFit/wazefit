@@ -30,12 +30,10 @@ interface AuthState {
   isAuthenticated: boolean
   isLoading: boolean
 
-  // Actions
   login: (email: string, senha: string) => Promise<void>
   register: (data: RegisterData) => Promise<void>
   logout: () => Promise<void>
   loadUser: () => Promise<void>
-  setLoading: (loading: boolean) => void
 }
 
 interface RegisterData {
@@ -63,21 +61,37 @@ interface MeResponse {
 // ── Token helpers ──
 
 function getAccessToken(): string | null {
-  return localStorage.getItem('wf_access_token')
+  try {
+    return localStorage.getItem('wf_access_token')
+  } catch {
+    return null
+  }
 }
 
 function getRefreshToken(): string | null {
-  return localStorage.getItem('wf_refresh_token')
+  try {
+    return localStorage.getItem('wf_refresh_token')
+  } catch {
+    return null
+  }
 }
 
 function setTokens(access: string, refresh: string) {
-  localStorage.setItem('wf_access_token', access)
-  localStorage.setItem('wf_refresh_token', refresh)
+  try {
+    localStorage.setItem('wf_access_token', access)
+    localStorage.setItem('wf_refresh_token', refresh)
+  } catch {
+    console.warn('[Auth] Falha ao salvar tokens no localStorage')
+  }
 }
 
 function clearTokens() {
-  localStorage.removeItem('wf_access_token')
-  localStorage.removeItem('wf_refresh_token')
+  try {
+    localStorage.removeItem('wf_access_token')
+    localStorage.removeItem('wf_refresh_token')
+  } catch {
+    // Ignorar
+  }
 }
 
 // Registrar token store no API client
@@ -88,7 +102,7 @@ setTokenStore({ getAccessToken, getRefreshToken, setTokens, clearTokens })
 export const useAuth = create<AuthState>((set) => ({
   user: null,
   tenant: null,
-  isAuthenticated: !!getAccessToken(),
+  isAuthenticated: false,
   isLoading: true,
 
   login: async (email, senha) => {
@@ -107,32 +121,33 @@ export const useAuth = create<AuthState>((set) => ({
     try {
       await api.post('/api/v1/auth/logout')
     } catch {
-      // Ignorar erro — limpar tokens de qualquer forma
+      // Ignorar
     }
     clearTokens()
-    set({ user: null, tenant: null, isAuthenticated: false })
+    set({ user: null, tenant: null, isAuthenticated: false, isLoading: false })
   },
 
   loadUser: async () => {
-    // Se já tem user carregado (via login/register), só desligar loading
-    const state = useAuth.getState()
-    if (state.user) {
-      set({ isLoading: false })
-      return
-    }
+    const token = getAccessToken()
 
-    if (!getAccessToken()) {
+    // Sem token = não autenticado
+    if (!token) {
       set({ isLoading: false, isAuthenticated: false })
       return
     }
+
     try {
       const data = await api.get<MeResponse>('/api/v1/auth/me')
-      set({ user: data.user, tenant: data.tenant, isAuthenticated: true, isLoading: false })
-    } catch {
+      set({
+        user: data.user,
+        tenant: data.tenant,
+        isAuthenticated: true,
+        isLoading: false,
+      })
+    } catch (err) {
+      console.warn('[Auth] loadUser falhou:', err)
       clearTokens()
       set({ user: null, tenant: null, isAuthenticated: false, isLoading: false })
     }
   },
-
-  setLoading: (loading) => set({ isLoading: loading }),
 }))

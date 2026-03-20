@@ -1,7 +1,7 @@
 /**
- * App — Router principal com navegação SPA (sem reload).
+ * App — Router principal com navegação SPA.
  */
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuth } from './stores/auth'
 import { useRouter } from './hooks/useRouter'
 import { LoginPage } from './pages/auth/LoginPage'
@@ -10,17 +10,18 @@ import { DashboardPage } from './pages/expert/DashboardPage'
 import { ExpertLayout } from './components/ui/ExpertLayout'
 
 function Router() {
-  const { isAuthenticated, isLoading, loadUser } = useAuth()
+  const { isAuthenticated, isLoading, user, loadUser } = useAuth()
   const { path, navigate } = useRouter()
+  const [initialized, setInitialized] = useState(false)
 
   useEffect(() => {
-    loadUser()
-  }, [loadUser])
+    loadUser().finally(() => setInitialized(true))
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Loading
-  if (isLoading) {
+  // Enquanto não inicializou, mostrar spinner
+  if (!initialized || isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-950">
+      <div className="min-h-screen flex items-center justify-center bg-gray-950 text-white">
         <div className="flex flex-col items-center gap-4">
           <div className="w-10 h-10 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
           <p className="text-gray-400 text-sm">Carregando...</p>
@@ -29,9 +30,9 @@ function Router() {
     )
   }
 
-  // Rotas públicas
+  // ── Rotas públicas (sempre acessíveis) ──
   if (path === '/login') {
-    if (isAuthenticated) {
+    if (isAuthenticated && user) {
       navigate('/dashboard')
       return null
     }
@@ -39,27 +40,27 @@ function Router() {
   }
 
   if (path === '/register') {
-    if (isAuthenticated) {
+    if (isAuthenticated && user) {
       navigate('/dashboard')
       return null
     }
     return <RegisterPage onNavigate={navigate} />
   }
 
-  // Redirect se não autenticado
-  if (!isAuthenticated) {
+  // ── Landing (não autenticado na raiz) ──
+  if (!isAuthenticated || !user) {
     if (path === '/') return <LandingPage onNavigate={navigate} />
     navigate('/login')
     return null
   }
 
-  // Redirect root para dashboard
+  // ── Redirect raiz → dashboard ──
   if (path === '/') {
     navigate('/dashboard')
     return null
   }
 
-  // Rotas protegidas (Expert)
+  // ── Rotas protegidas ──
   return (
     <ExpertLayout onNavigate={navigate}>
       {path === '/dashboard' && <DashboardPage />}
