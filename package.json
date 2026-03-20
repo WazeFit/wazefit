@@ -5,8 +5,12 @@
   "description": "WazeFit — SaaS white label para nicho fitness",
   "scripts": {
     "dev": "pnpm --filter @wazefit/web dev",
+    "dev:api": "pnpm --filter @wazefit/api dev",
+    "dev:all": "pnpm --parallel --filter @wazefit/web --filter @wazefit/api dev",
     "build": "pnpm --filter @wazefit/web build",
-    "preview": "pnpm --filter @wazefit/web preview"
+    "typecheck": "pnpm -r typecheck",
+    "deploy:api": "pnpm --filter @wazefit/api deploy",
+    "deploy:web": "pnpm --filter @wazefit/web build"
   },
   "engines": {
     "node": ">=20"

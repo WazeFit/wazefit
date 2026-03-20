@@ -1,0 +1,40 @@
+name = "wazefit-api"
+main = "src/index.ts"
+compatibility_date = "2024-12-30"
+compatibility_flags = ["nodejs_compat"]
+
+# ── D1 Database ──
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "wazefit-db"
+# database_id = "TODO_CRIAR_NA_TASK_03"
+
+# ── KV Namespaces ──
+# [[kv_namespaces]]
+# binding = "KV_SESSIONS"
+# id = "TODO_CRIAR_NA_TASK_03"
+
+# [[kv_namespaces]]
+# binding = "KV_TENANTS"
+# id = "TODO_CRIAR_NA_TASK_03"
+
+# [[kv_namespaces]]
+# binding = "KV_JOBS"
+# id = "TODO_CRIAR_NA_TASK_03"
+
+# ── R2 Bucket ──
+# [[r2_buckets]]
+# binding = "R2_PRIVATE"
+# bucket_name = "wazefit-private"
+
+# ── Queues ──
+# [[queues.producers]]
+# binding = "QUEUE_NOTIFY"
+# queue = "notifications"
+
+# [[queues.producers]]
+# binding = "QUEUE_LLM"
+# queue = "llm-jobs"
+
+# [vars]
+# ENVIRONMENT = "production"
