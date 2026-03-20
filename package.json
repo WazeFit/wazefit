@@ -1,0 +1,14 @@
+{
+  "name": "wazefit",
+  "version": "0.1.0",
+  "private": true,
+  "description": "WazeFit — SaaS white label para nicho fitness",
+  "scripts": {
+    "dev": "pnpm --filter @wazefit/web dev",
+    "build": "pnpm --filter @wazefit/web build",
+    "preview": "pnpm --filter @wazefit/web preview"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
