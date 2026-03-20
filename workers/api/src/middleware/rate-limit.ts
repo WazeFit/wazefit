@@ -59,10 +59,10 @@ export const loginRateLimit = rateLimit({
 })
 
 /**
- * Rate limit para registro: 3 tentativas por hora por IP.
+ * Rate limit para registro: 10 tentativas por hora por IP.
  */
 export const registerRateLimit = rateLimit({
-  maxRequests: 3,
+  maxRequests: 10,
   windowSeconds: 3600,
   prefix: 'register',
 })
