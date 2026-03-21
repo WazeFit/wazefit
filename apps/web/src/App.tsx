@@ -1,25 +1,64 @@
 /**
- * App — Router principal com navegação SPA.
+ * App — Router principal SPA.
+ * Nunca retorna null — sempre renderiza algo visível.
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useAuth } from './stores/auth'
-import { useRouter } from './hooks/useRouter'
 import { LoginPage } from './pages/auth/LoginPage'
 import { RegisterPage } from './pages/auth/RegisterPage'
 import { DashboardPage } from './pages/expert/DashboardPage'
 import { ExpertLayout } from './components/ui/ExpertLayout'
 
-function Router() {
-  const { isAuthenticated, isLoading, user, loadUser } = useAuth()
-  const { path, navigate } = useRouter()
-  const [initialized, setInitialized] = useState(false)
+// ── Router hook ──
+function usePath() {
+  const [path, setPath] = useState(window.location.pathname)
 
   useEffect(() => {
-    loadUser().finally(() => setInitialized(true))
+    const handler = () => setPath(window.location.pathname)
+    window.addEventListener('popstate', handler)
+    return () => window.removeEventListener('popstate', handler)
+  }, [])
+
+  const navigate = useCallback((to: string) => {
+    if (to !== window.location.pathname) {
+      window.history.pushState(null, '', to)
+      setPath(to)
+    }
+  }, [])
+
+  return { path, navigate }
+}
+
+// ── App ──
+export function App() {
+  const { isAuthenticated, isLoading, user, loadUser } = useAuth()
+  const { path, navigate } = usePath()
+  const [ready, setReady] = useState(false)
+
+  useEffect(() => {
+    loadUser().finally(() => setReady(true))
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Enquanto não inicializou, mostrar spinner
-  if (!initialized || isLoading) {
+  // Redirect helpers — chamados via useEffect, não durante render
+  const loggedIn = ready && isAuthenticated && !!user
+  const loggedOut = ready && !isAuthenticated
+
+  useEffect(() => {
+    if (!ready) return
+
+    // Se logado e em rota pública → dashboard
+    if (loggedIn && (path === '/' || path === '/login' || path === '/register')) {
+      navigate('/dashboard')
+    }
+
+    // Se não logado e em rota protegida → login
+    if (loggedOut && path !== '/' && path !== '/login' && path !== '/register') {
+      navigate('/login')
+    }
+  }, [ready, loggedIn, loggedOut, path, navigate])
+
+  // ── Loading ──
+  if (!ready || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-950 text-white">
         <div className="flex flex-col items-center gap-4">
@@ -30,49 +69,45 @@ function Router() {
     )
   }
 
-  // ── Rotas públicas (sempre acessíveis) ──
-  if (path === '/login') {
-    if (isAuthenticated && user) {
-      navigate('/dashboard')
-      return null
-    }
+  // ── Rotas públicas ──
+  if (path === '/login' && !loggedIn) {
     return <LoginPage onNavigate={navigate} />
   }
 
-  if (path === '/register') {
-    if (isAuthenticated && user) {
-      navigate('/dashboard')
-      return null
-    }
+  if (path === '/register' && !loggedIn) {
     return <RegisterPage onNavigate={navigate} />
   }
 
-  // ── Landing (não autenticado na raiz) ──
-  if (!isAuthenticated || !user) {
-    if (path === '/') return <LandingPage onNavigate={navigate} />
-    navigate('/login')
-    return null
-  }
-
-  // ── Redirect raiz → dashboard ──
-  if (path === '/') {
-    navigate('/dashboard')
-    return null
+  if (path === '/' && !loggedIn) {
+    return <LandingPage onNavigate={navigate} />
   }
 
   // ── Rotas protegidas ──
+  if (loggedIn) {
+    return (
+      <ExpertLayout onNavigate={navigate}>
+        {path === '/dashboard' && <DashboardPage />}
+        {path.startsWith('/alunos') && <PlaceholderPage title="Alunos" icon="👥" />}
+        {path.startsWith('/exercicios') && <PlaceholderPage title="Exercícios" icon="🏋️" />}
+        {path.startsWith('/fichas') && <PlaceholderPage title="Fichas" icon="📋" />}
+        {path.startsWith('/chat') && <PlaceholderPage title="Chat" icon="💬" />}
+        {path.startsWith('/financeiro') && <PlaceholderPage title="Financeiro" icon="💰" />}
+      </ExpertLayout>
+    )
+  }
+
+  // Fallback — nunca deve chegar aqui, mas garante que não fica tela preta
   return (
-    <ExpertLayout onNavigate={navigate}>
-      {path === '/dashboard' && <DashboardPage />}
-      {path.startsWith('/alunos') && <PlaceholderPage title="Alunos" icon="👥" />}
-      {path.startsWith('/exercicios') && <PlaceholderPage title="Exercícios" icon="🏋️" />}
-      {path.startsWith('/fichas') && <PlaceholderPage title="Fichas" icon="📋" />}
-      {path.startsWith('/chat') && <PlaceholderPage title="Chat" icon="💬" />}
-      {path.startsWith('/financeiro') && <PlaceholderPage title="Financeiro" icon="💰" />}
-    </ExpertLayout>
+    <div className="min-h-screen flex items-center justify-center bg-gray-950 text-white">
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-10 h-10 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+        <p className="text-gray-400 text-sm">Redirecionando...</p>
+      </div>
+    </div>
   )
 }
 
+// ── Placeholder ──
 function PlaceholderPage({ title, icon }: { title: string; icon: string }) {
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
@@ -83,6 +118,7 @@ function PlaceholderPage({ title, icon }: { title: string; icon: string }) {
   )
 }
 
+// ── Landing ──
 function LandingPage({ onNavigate }: { onNavigate: (path: string) => void }) {
   return (
     <div className="min-h-screen flex flex-col bg-gray-950 text-white">
@@ -171,8 +207,4 @@ function LandingPage({ onNavigate }: { onNavigate: (path: string) => void }) {
       </footer>
     </div>
   )
-}
-
-export function App() {
-  return <Router />
 }
