@@ -4,7 +4,7 @@
  */
 import { useState, useEffect, useCallback } from 'react'
 import { api, ApiError } from '../../lib/api'
-import type { PlanoNutricional, Aluno, Refeicao, AlimentoInput } from '../../lib/api'
+import type { PlanoNutricional, Aluno, AlimentoInput } from '../../lib/api'
 import { Button } from '../../components/ui/Button'
 import { Card, CardHeader, CardBody } from '../../components/ui/Card'
 import { Input } from '../../components/ui/Input'
