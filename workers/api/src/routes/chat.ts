@@ -13,7 +13,7 @@ import { z } from 'zod'
 import { eq, and, desc, isNull, sql, gt, or } from 'drizzle-orm'
 import type { Env, AuthVariables } from '../types'
 import { createDB } from '../db/client'
-import { mensagens, alunos } from '../db/schema'
+import { mensagens, alunos, experts } from '../db/schema'
 import { generateId, now } from '../lib/id'
 import { authMiddleware } from '../middleware/auth'
 
@@ -148,8 +148,16 @@ chatRouter.post('/:aluno_id/mensagens', zValidator('json', sendMessageSchema), a
 
   // Determinar remetente e destinatário
   const isExpert = role === 'expert' || role === 'admin'
+  let destinatarioId: string
+  if (isExpert) {
+    destinatarioId = aluno_id
+  } else {
+    // Aluno envia para o expert do tenant
+    const expert = await db.select({ id: experts.id }).from(experts)
+      .where(eq(experts.tenant_id, tenantId)).get()
+    destinatarioId = expert?.id ?? aluno_id
+  }
   const remetenteId = userId
-  const destinatarioId = isExpert ? aluno_id : userId // Se aluno, destinatário é o expert
   const remetenteTipo = isExpert ? 'expert' : 'aluno'
 
   const id = generateId()
@@ -207,12 +215,19 @@ chatRouter.get('/:aluno_id/mensagens', zValidator('query', listQuerySchema), asy
     return c.json({ error: 'Aluno não encontrado.', code: 404 }, 404)
   }
 
+  const role = c.get('role')
+  // Para aluno: buscar todas msgs onde aluno é remetente ou destinatário
+  // Para expert: buscar msgs entre expert e o aluno específico
+  const msgFilter = role === 'aluno'
+    ? or(eq(mensagens.remetente_id, aluno_id), eq(mensagens.destinatario_id, aluno_id))
+    : or(
+        and(eq(mensagens.remetente_id, userId), eq(mensagens.destinatario_id, aluno_id)),
+        and(eq(mensagens.remetente_id, aluno_id), eq(mensagens.destinatario_id, userId)),
+      )
+
   const conditions = [
     eq(mensagens.tenant_id, tenantId),
-    or(
-      and(eq(mensagens.remetente_id, userId), eq(mensagens.destinatario_id, aluno_id)),
-      and(eq(mensagens.remetente_id, aluno_id), eq(mensagens.destinatario_id, userId)),
-    ),
+    msgFilter,
   ]
 
   if (since) {

@@ -40,12 +40,15 @@ app.get('/ping', (c) => {
 })
 
 // ── Rotas da API ──
+// IMPORTANTE: calendarioRouter ANTES de alunosRouter — ambos em /api/v1/alunos
+// calendarioRouter tem auth sem expertOnly (aluno pode ver calendário/treino)
+// alunosRouter tem expertOnly global (CRUD alunos)
 app.route('/api/v1/auth', auth)
+app.route('/api/v1/alunos', calendarioRouter)
 app.route('/api/v1/alunos', alunosRouter)
 app.route('/api/v1/exercicios', exerciciosRouter)
 app.route('/api/v1/fichas', fichasRouter)
 app.route('/api/v1/biblioteca', bibliotecaRouter)
-app.route('/api/v1/alunos', calendarioRouter)
 app.route('/api/v1/execucoes', execucoesRouter)
 app.route('/api/v1/ranking', rankingRouter)
 app.route('/api/v1/evolucao', evolucaoRouter)

@@ -13,7 +13,7 @@ import { generateId, now } from '../lib/id'
 import { authMiddleware, expertOnly } from '../middleware/auth'
 
 const nutricaoRouter = new Hono<{ Bindings: Env; Variables: AuthVariables }>()
-nutricaoRouter.use('*', authMiddleware, expertOnly)
+nutricaoRouter.use('*', authMiddleware)
 
 const createPlanoSchema = z.object({
   aluno_id: z.string().uuid('ID do aluno inválido.'),
@@ -78,7 +78,7 @@ const updateAlimentoSchema = z.object({
 })
 
 // POST /nutricao/planos
-nutricaoRouter.post('/planos', zValidator('json', createPlanoSchema), async (c) => {
+nutricaoRouter.post('/planos', expertOnly, zValidator('json', createPlanoSchema), async (c) => {
   const body = c.req.valid('json')
   const tenantId = c.get('tenant_id')
   const expertId = c.get('user_id')
@@ -104,10 +104,17 @@ nutricaoRouter.post('/planos', zValidator('json', createPlanoSchema), async (c) 
 nutricaoRouter.get('/planos', zValidator('query', listPlanosQuery), async (c) => {
   const { page, limit, aluno_id } = c.req.valid('query')
   const tenantId = c.get('tenant_id')
+  const role = c.get('role')
+  const userId = c.get('user_id')
   const db = createDB(c.env.DB)
   const offset = (page - 1) * limit
   const conditions = [eq(planosNutricionais.tenant_id, tenantId), isNull(planosNutricionais.deletado_em)]
-  if (aluno_id) conditions.push(eq(planosNutricionais.aluno_id, aluno_id))
+  // Aluno só vê seus próprios planos
+  if (role === 'aluno') {
+    conditions.push(eq(planosNutricionais.aluno_id, userId))
+  } else if (aluno_id) {
+    conditions.push(eq(planosNutricionais.aluno_id, aluno_id))
+  }
   const where = and(...conditions)
 
   const countResult = await db.select({ count: sql<number>`COUNT(*)` }).from(planosNutricionais).where(where).get()
@@ -147,7 +154,7 @@ nutricaoRouter.get('/planos/:id', async (c) => {
 })
 
 // PUT /nutricao/planos/:id
-nutricaoRouter.put('/planos/:id', zValidator('json', updatePlanoSchema), async (c) => {
+nutricaoRouter.put('/planos/:id', expertOnly, zValidator('json', updatePlanoSchema), async (c) => {
   const { id } = c.req.param()
   const body = c.req.valid('json')
   const tenantId = c.get('tenant_id')
@@ -161,7 +168,7 @@ nutricaoRouter.put('/planos/:id', zValidator('json', updatePlanoSchema), async (
 })
 
 // DELETE /nutricao/planos/:id
-nutricaoRouter.delete('/planos/:id', async (c) => {
+nutricaoRouter.delete('/planos/:id', expertOnly, async (c) => {
   const { id } = c.req.param()
   const tenantId = c.get('tenant_id')
   const db = createDB(c.env.DB)
@@ -173,7 +180,7 @@ nutricaoRouter.delete('/planos/:id', async (c) => {
 })
 
 // POST /nutricao/planos/:id/refeicoes
-nutricaoRouter.post('/planos/:id/refeicoes', zValidator('json', createRefeicaoSchema), async (c) => {
+nutricaoRouter.post('/planos/:id/refeicoes', expertOnly, zValidator('json', createRefeicaoSchema), async (c) => {
   const { id: planoId } = c.req.param()
   const body = c.req.valid('json')
   const tenantId = c.get('tenant_id')
@@ -192,7 +199,7 @@ nutricaoRouter.post('/planos/:id/refeicoes', zValidator('json', createRefeicaoSc
 })
 
 // PUT /nutricao/refeicoes/:id
-nutricaoRouter.put('/refeicoes/:id', zValidator('json', updateRefeicaoSchema), async (c) => {
+nutricaoRouter.put('/refeicoes/:id', expertOnly, zValidator('json', updateRefeicaoSchema), async (c) => {
   const { id } = c.req.param()
   const body = c.req.valid('json')
   const tenantId = c.get('tenant_id')
@@ -211,7 +218,7 @@ nutricaoRouter.put('/refeicoes/:id', zValidator('json', updateRefeicaoSchema), a
 })
 
 // DELETE /nutricao/refeicoes/:id
-nutricaoRouter.delete('/refeicoes/:id', async (c) => {
+nutricaoRouter.delete('/refeicoes/:id', expertOnly, async (c) => {
   const { id } = c.req.param()
   const tenantId = c.get('tenant_id')
   const db = createDB(c.env.DB)
@@ -223,7 +230,7 @@ nutricaoRouter.delete('/refeicoes/:id', async (c) => {
 })
 
 // POST /nutricao/refeicoes/:id/alimentos
-nutricaoRouter.post('/refeicoes/:id/alimentos', zValidator('json', createAlimentoSchema), async (c) => {
+nutricaoRouter.post('/refeicoes/:id/alimentos', expertOnly, zValidator('json', createAlimentoSchema), async (c) => {
   const { id: refeicaoId } = c.req.param()
   const body = c.req.valid('json')
   const tenantId = c.get('tenant_id')
@@ -244,7 +251,7 @@ nutricaoRouter.post('/refeicoes/:id/alimentos', zValidator('json', createAliment
 })
 
 // PUT /nutricao/alimentos/:id
-nutricaoRouter.put('/alimentos/:id', zValidator('json', updateAlimentoSchema), async (c) => {
+nutricaoRouter.put('/alimentos/:id', expertOnly, zValidator('json', updateAlimentoSchema), async (c) => {
   const { id } = c.req.param()
   const body = c.req.valid('json')
   const tenantId = c.get('tenant_id')
@@ -269,7 +276,7 @@ nutricaoRouter.put('/alimentos/:id', zValidator('json', updateAlimentoSchema), a
 })
 
 // DELETE /nutricao/alimentos/:id
-nutricaoRouter.delete('/alimentos/:id', async (c) => {
+nutricaoRouter.delete('/alimentos/:id', expertOnly, async (c) => {
   const { id } = c.req.param()
   const tenantId = c.get('tenant_id')
   const db = createDB(c.env.DB)

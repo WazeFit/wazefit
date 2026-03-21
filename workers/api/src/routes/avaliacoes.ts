@@ -18,7 +18,7 @@ import { generateId, now } from '../lib/id'
 import { authMiddleware, expertOnly } from '../middleware/auth'
 
 const avaliacoesRouter = new Hono<{ Bindings: Env; Variables: AuthVariables }>()
-avaliacoesRouter.use('*', authMiddleware, expertOnly)
+avaliacoesRouter.use('*', authMiddleware)
 
 const createAvaliacaoSchema = z.object({
   aluno_id: z.string().uuid('ID do aluno inválido.'),
@@ -43,7 +43,7 @@ const listQuery = z.object({
 })
 
 // POST /avaliacoes
-avaliacoesRouter.post('/', zValidator('json', createAvaliacaoSchema), async (c) => {
+avaliacoesRouter.post('/', expertOnly, zValidator('json', createAvaliacaoSchema), async (c) => {
   const body = c.req.valid('json')
   const tenantId = c.get('tenant_id')
   const expertId = c.get('user_id')
@@ -68,11 +68,18 @@ avaliacoesRouter.post('/', zValidator('json', createAvaliacaoSchema), async (c) 
 avaliacoesRouter.get('/', zValidator('query', listQuery), async (c) => {
   const { page, limit, aluno_id, tipo } = c.req.valid('query')
   const tenantId = c.get('tenant_id')
+  const role = c.get('role')
+  const userId = c.get('user_id')
   const db = createDB(c.env.DB)
   const offset = (page - 1) * limit
 
   const conditions = [eq(avaliacoes.tenant_id, tenantId), isNull(avaliacoes.deletado_em)]
-  if (aluno_id) conditions.push(eq(avaliacoes.aluno_id, aluno_id))
+  // Aluno só vê suas próprias avaliações
+  if (role === 'aluno') {
+    conditions.push(eq(avaliacoes.aluno_id, userId))
+  } else if (aluno_id) {
+    conditions.push(eq(avaliacoes.aluno_id, aluno_id))
+  }
   if (tipo) conditions.push(eq(avaliacoes.tipo, tipo))
   const where = and(...conditions)
 
@@ -105,7 +112,7 @@ avaliacoesRouter.get('/:id', async (c) => {
 })
 
 // PUT /avaliacoes/:id
-avaliacoesRouter.put('/:id', zValidator('json', updateAvaliacaoSchema), async (c) => {
+avaliacoesRouter.put('/:id', expertOnly, zValidator('json', updateAvaliacaoSchema), async (c) => {
   const { id } = c.req.param()
   const body = c.req.valid('json')
   const tenantId = c.get('tenant_id')
@@ -129,7 +136,7 @@ avaliacoesRouter.put('/:id', zValidator('json', updateAvaliacaoSchema), async (c
 })
 
 // DELETE /avaliacoes/:id
-avaliacoesRouter.delete('/:id', async (c) => {
+avaliacoesRouter.delete('/:id', expertOnly, async (c) => {
   const { id } = c.req.param()
   const tenantId = c.get('tenant_id')
   const db = createDB(c.env.DB)
