@@ -28,9 +28,12 @@ binding = "KV_JOBS"
 id = "64ac02bd4b5a46b8bfef16ec46aa2eaf"
 
 # ── R2 Bucket ──
-[[r2_buckets]]
-binding = "R2_PRIVATE"
-bucket_name = "wazefit-private"
+# ── R2 Bucket ──
+# ⚠️ R2 precisa ser ativado no dashboard Cloudflare primeiro
+# Descomentar após ativar R2:
+# [[r2_buckets]]
+# binding = "R2_PRIVATE"
+# bucket_name = "wazefit-private"
 
 # ── Queues (Producers) ──
 [[queues.producers]]
