@@ -1,48 +1,23 @@
 /**
- * Auth Store — gerencia estado de autenticação.
- * Persiste tokens no localStorage.
+ * Auth Store — estado de autenticação.
+ * Usa localStorage diretamente. Sem Zustand.
+ * Re-render via React state no App.
  */
-import { create } from 'zustand'
-import { api, setTokenStore } from '../lib/api'
 
-interface User {
+import { api, ApiError } from '../lib/api'
+
+export interface User {
   id: string
   nome: string
   email: string
   role: string
-  avatar_url?: string | null
 }
 
-interface Tenant {
+export interface Tenant {
   id: string
   nome?: string
   slug?: string
   plano?: string
-  max_alunos?: number
-  cor_primaria?: string
-  cor_secundaria?: string
-  logo_url?: string | null
-}
-
-interface AuthState {
-  user: User | null
-  tenant: Tenant | null
-  isAuthenticated: boolean
-  isLoading: boolean
-
-  login: (email: string, senha: string) => Promise<void>
-  register: (data: RegisterData) => Promise<void>
-  logout: () => Promise<void>
-  loadUser: () => Promise<void>
-}
-
-interface RegisterData {
-  nome: string
-  email: string
-  senha: string
-  nome_negocio: string
-  telefone?: string
-  especialidade?: string
 }
 
 interface AuthResponse {
@@ -50,7 +25,6 @@ interface AuthResponse {
   tenant: Tenant
   access_token: string
   refresh_token: string
-  expires_in: number
 }
 
 interface MeResponse {
@@ -58,96 +32,93 @@ interface MeResponse {
   tenant: Tenant | null
 }
 
-// ── Token helpers ──
+/** Salvar tokens e dados do usuário */
+function save(data: AuthResponse) {
+  localStorage.setItem('wf_token', data.access_token)
+  localStorage.setItem('wf_refresh', data.refresh_token)
+  localStorage.setItem('wf_user', JSON.stringify(data.user))
+  localStorage.setItem('wf_tenant', JSON.stringify(data.tenant))
+}
 
-function getAccessToken(): string | null {
+/** Limpar tudo */
+function clear() {
+  localStorage.removeItem('wf_token')
+  localStorage.removeItem('wf_refresh')
+  localStorage.removeItem('wf_user')
+  localStorage.removeItem('wf_tenant')
+}
+
+/** Ler user do localStorage */
+export function getSavedUser(): User | null {
   try {
-    return localStorage.getItem('wf_access_token')
+    const raw = localStorage.getItem('wf_user')
+    return raw ? JSON.parse(raw) : null
   } catch {
     return null
   }
 }
 
-function getRefreshToken(): string | null {
+/** Ler tenant do localStorage */
+export function getSavedTenant(): Tenant | null {
   try {
-    return localStorage.getItem('wf_refresh_token')
+    const raw = localStorage.getItem('wf_tenant')
+    return raw ? JSON.parse(raw) : null
   } catch {
     return null
   }
 }
 
-function setTokens(access: string, refresh: string) {
+/** Tem token? */
+export function hasToken(): boolean {
+  return !!localStorage.getItem('wf_token')
+}
+
+/** Register — retorna user e tenant */
+export async function register(data: {
+  nome: string
+  email: string
+  senha: string
+  nome_negocio: string
+  telefone?: string
+}): Promise<{ user: User; tenant: Tenant }> {
+  const res = await api.post<AuthResponse>('/api/v1/auth/register', data)
+  save(res)
+  return { user: res.user, tenant: res.tenant }
+}
+
+/** Login */
+export async function login(email: string, senha: string): Promise<{ user: User; tenant: Tenant }> {
+  const res = await api.post<AuthResponse>('/api/v1/auth/login', { email, senha })
+  save(res)
+  return { user: res.user, tenant: res.tenant }
+}
+
+/** Verificar sessão (GET /auth/me) */
+export async function checkSession(): Promise<{ user: User; tenant: Tenant } | null> {
+  if (!hasToken()) return null
+
   try {
-    localStorage.setItem('wf_access_token', access)
-    localStorage.setItem('wf_refresh_token', refresh)
-  } catch {
-    console.warn('[Auth] Falha ao salvar tokens no localStorage')
+    const res = await api.get<MeResponse>('/api/v1/auth/me')
+    // Atualizar dados locais
+    localStorage.setItem('wf_user', JSON.stringify(res.user))
+    if (res.tenant) localStorage.setItem('wf_tenant', JSON.stringify(res.tenant))
+    return { user: res.user, tenant: res.tenant! }
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 401) {
+      clear()
+    }
+    return null
   }
 }
 
-function clearTokens() {
+/** Logout */
+export async function logout(): Promise<void> {
   try {
-    localStorage.removeItem('wf_access_token')
-    localStorage.removeItem('wf_refresh_token')
+    await api.post('/api/v1/auth/logout')
   } catch {
     // Ignorar
   }
+  clear()
 }
 
-// Registrar token store no API client
-setTokenStore({ getAccessToken, getRefreshToken, setTokens, clearTokens })
-
-// ── Store ──
-
-export const useAuth = create<AuthState>((set) => ({
-  user: null,
-  tenant: null,
-  isAuthenticated: false,
-  isLoading: true,
-
-  login: async (email, senha) => {
-    const data = await api.post<AuthResponse>('/api/v1/auth/login', { email, senha })
-    setTokens(data.access_token, data.refresh_token)
-    set({ user: data.user, tenant: data.tenant, isAuthenticated: true, isLoading: false })
-  },
-
-  register: async (registerData) => {
-    const data = await api.post<AuthResponse>('/api/v1/auth/register', registerData)
-    setTokens(data.access_token, data.refresh_token)
-    set({ user: data.user, tenant: data.tenant, isAuthenticated: true, isLoading: false })
-  },
-
-  logout: async () => {
-    try {
-      await api.post('/api/v1/auth/logout')
-    } catch {
-      // Ignorar
-    }
-    clearTokens()
-    set({ user: null, tenant: null, isAuthenticated: false, isLoading: false })
-  },
-
-  loadUser: async () => {
-    const token = getAccessToken()
-
-    // Sem token = não autenticado
-    if (!token) {
-      set({ isLoading: false, isAuthenticated: false })
-      return
-    }
-
-    try {
-      const data = await api.get<MeResponse>('/api/v1/auth/me')
-      set({
-        user: data.user,
-        tenant: data.tenant,
-        isAuthenticated: true,
-        isLoading: false,
-      })
-    } catch (err) {
-      console.warn('[Auth] loadUser falhou:', err)
-      clearTokens()
-      set({ user: null, tenant: null, isAuthenticated: false, isLoading: false })
-    }
-  },
-}))
+export { ApiError }

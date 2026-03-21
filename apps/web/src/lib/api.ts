@@ -1,131 +1,54 @@
 /**
  * API Client — comunicação com o Worker API.
- * Gerencia tokens, refresh automático e error handling.
+ * Simples e direto. Sem refresh automático, sem redirects.
  */
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://api.wazefit.com'
+const BASE = 'https://api.wazefit.com'
 
-interface TokenStore {
-  getAccessToken: () => string | null
-  getRefreshToken: () => string | null
-  setTokens: (access: string, refresh: string) => void
-  clearTokens: () => void
-}
+export class ApiError extends Error {
+  status: number
+  body: { error: string; code: number }
 
-let tokenStore: TokenStore | null = null
-
-export function setTokenStore(store: TokenStore) {
-  tokenStore = store
-}
-
-interface ApiError {
-  error: string
-  code: number
-  detalhes?: Array<{ campo: string; mensagem: string }>
-}
-
-class ApiClientError extends Error {
-  constructor(
-    public status: number,
-    public data: ApiError,
-  ) {
-    super(data.error)
-    this.name = 'ApiClientError'
+  constructor(status: number, body: { error: string; code: number }) {
+    super(body.error)
+    this.name = 'ApiError'
+    this.status = status
+    this.body = body
   }
 }
 
-async function request<T>(
-  path: string,
-  options: RequestInit = {},
-): Promise<T> {
+async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...(options.headers as Record<string, string>),
   }
 
-  // Adicionar token se disponível
-  const token = tokenStore?.getAccessToken()
+  const token = localStorage.getItem('wf_token')
   if (token) {
     headers['Authorization'] = `Bearer ${token}`
   }
 
-  const res = await fetch(`${API_URL}${path}`, {
-    ...options,
+  const res = await fetch(`${BASE}${path}`, {
+    method,
     headers,
+    body: body ? JSON.stringify(body) : undefined,
   })
 
-  // Se 401 e temos refresh token, tentar refresh
-  if (res.status === 401 && tokenStore?.getRefreshToken()) {
-    const refreshed = await tryRefresh()
-    if (refreshed) {
-      // Retry com novo token
-      headers['Authorization'] = `Bearer ${tokenStore!.getAccessToken()}`
-      const retryRes = await fetch(`${API_URL}${path}`, {
-        ...options,
-        headers,
-      })
-      if (!retryRes.ok) {
-        const data = await retryRes.json()
-        throw new ApiClientError(retryRes.status, data as ApiError)
-      }
-      return retryRes.json() as Promise<T>
-    } else {
-      // Refresh falhou — limpar tokens, deixar o Router redirecionar
-      tokenStore?.clearTokens()
-      throw new ApiClientError(401, { error: 'Sessão expirada.', code: 401 })
-    }
-  }
-
   if (!res.ok) {
-    const data = await res.json()
-    throw new ApiClientError(res.status, data as ApiError)
+    let data: { error: string; code: number }
+    try {
+      data = await res.json()
+    } catch {
+      data = { error: `HTTP ${res.status}`, code: res.status }
+    }
+    throw new ApiError(res.status, data)
   }
 
   return res.json() as Promise<T>
 }
 
-async function tryRefresh(): Promise<boolean> {
-  try {
-    const refreshToken = tokenStore?.getRefreshToken()
-    if (!refreshToken) return false
-
-    const res = await fetch(`${API_URL}/api/v1/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresh_token: refreshToken }),
-    })
-
-    if (!res.ok) return false
-
-    const data = (await res.json()) as {
-      access_token: string
-      refresh_token: string
-    }
-    tokenStore?.setTokens(data.access_token, data.refresh_token)
-    return true
-  } catch {
-    return false
-  }
-}
-
-// ── API Methods ──
-
 export const api = {
-  get: <T>(path: string) => request<T>(path),
-
-  post: <T>(path: string, body?: unknown) =>
-    request<T>(path, {
-      method: 'POST',
-      body: body ? JSON.stringify(body) : undefined,
-    }),
-
-  put: <T>(path: string, body?: unknown) =>
-    request<T>(path, {
-      method: 'PUT',
-      body: body ? JSON.stringify(body) : undefined,
-    }),
-
-  delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
+  get: <T>(path: string) => request<T>('GET', path),
+  post: <T>(path: string, body?: unknown) => request<T>('POST', path, body),
+  put: <T>(path: string, body?: unknown) => request<T>('PUT', path, body),
+  delete: <T>(path: string) => request<T>('DELETE', path),
 }
-
-export { ApiClientError }
