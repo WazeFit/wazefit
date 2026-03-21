@@ -1,5 +1,5 @@
 /**
- * Sidebar — navegação lateral.
+ * Sidebar — navegação lateral do Expert.
  */
 import type { User, Tenant } from '../../stores/auth'
 
@@ -14,10 +14,12 @@ interface Props {
 const NAV = [
   { label: 'Dashboard', icon: '📊', href: '/dashboard' },
   { label: 'Alunos', icon: '👥', href: '/alunos' },
-  { label: 'Exercícios', icon: '🏋️', href: '/exercicios' },
-  { label: 'Fichas', icon: '📋', href: '/fichas' },
-  { label: 'Chat', icon: '💬', href: '/chat' },
-  { label: 'Financeiro', icon: '💰', href: '/financeiro' },
+  { label: 'Exercícios', icon: '🏋️', href: '/expert/exercicios' },
+  { label: 'Fichas', icon: '📋', href: '/expert/fichas' },
+  { label: 'Biblioteca', icon: '📚', href: '/expert/biblioteca' },
+  { label: 'Chat', icon: '💬', href: '/expert/chat' },
+  { label: 'Ranking', icon: '🏆', href: '/expert/ranking' },
+  { label: 'Financeiro', icon: '💰', href: '/expert/financeiro' },
 ]
 
 export function Sidebar({ user, tenant, currentPath, onNavigate, onLogout }: Props) {
@@ -25,9 +27,9 @@ export function Sidebar({ user, tenant, currentPath, onNavigate, onLogout }: Pro
     <aside className="fixed left-0 top-0 h-screen w-64 bg-gray-900 border-r border-gray-800 flex flex-col z-40">
       <div className="p-5 border-b border-gray-800">
         <button onClick={() => onNavigate('/dashboard')} className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-brand-500 rounded-lg flex items-center justify-center font-bold text-sm">W</div>
+          <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center font-bold text-sm">W</div>
           <div className="text-left">
-            <span className="text-lg font-bold text-white">Waze<span className="text-brand-400">Fit</span></span>
+            <span className="text-lg font-bold text-white">Waze<span className="text-green-400">Fit</span></span>
             <p className="text-xs text-gray-500 -mt-0.5 truncate max-w-[160px]">{tenant.nome || 'Painel Expert'}</p>
           </div>
         </button>
@@ -39,7 +41,7 @@ export function Sidebar({ user, tenant, currentPath, onNavigate, onLogout }: Pro
           return (
             <button key={item.href} onClick={() => onNavigate(item.href)}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                active ? 'bg-brand-500/10 text-brand-400 font-medium' : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'
+                active ? 'bg-green-500/10 text-green-400 font-medium' : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'
               }`}>
               <span className="text-lg">{item.icon}</span>
               {item.label}
