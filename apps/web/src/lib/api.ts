@@ -214,6 +214,198 @@ export interface PaginatedResponse<T> {
   per_page: number
 }
 
+// ── Types — Sprint 3 ──
+
+export interface BriefingPergunta {
+  id: string
+  texto: string
+  resposta: string | null
+  ordem: number
+}
+
+export interface Briefing {
+  id: string
+  aluno_id: string
+  aluno_nome: string
+  status: 'pendente' | 'gerando' | 'aguardando_respostas' | 'completo' | 'erro'
+  total_perguntas: number
+  respostas_count: number
+  created_at: string
+}
+
+export interface BriefingDetail {
+  id: string
+  aluno_id: string
+  aluno_nome: string
+  status: 'pendente' | 'gerando' | 'aguardando_respostas' | 'completo' | 'erro'
+  perguntas: BriefingPergunta[]
+  analise: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface GerarTreinoParams {
+  aluno_id: string
+  objetivo: string
+  nivel: string
+  dias_semana: number
+  observacoes?: string
+}
+
+export interface GerarDietaParams {
+  aluno_id: string
+  objetivo: string
+  restricoes?: string
+  calorias_alvo?: number
+  observacoes?: string
+}
+
+export interface LLMJob {
+  id: string
+  tipo: 'treino' | 'dieta' | 'briefing'
+  status: 'pending' | 'processing' | 'completed' | 'failed'
+  aluno_id: string
+  aluno_nome?: string
+  resultado: Record<string, unknown> | null
+  erro: string | null
+  tokens_usados: number | null
+  custo_estimado: number | null
+  created_at: string
+  updated_at: string
+}
+
+export interface Alimento {
+  id: string
+  nome: string
+  quantidade: number
+  unidade: string
+  calorias: number
+  proteina: number
+  carboidrato: number
+  gordura: number
+}
+
+export interface AlimentoInput {
+  nome: string
+  quantidade: number
+  unidade: string
+  calorias: number
+  proteina: number
+  carboidrato: number
+  gordura: number
+}
+
+export interface Refeicao {
+  id: string
+  nome: string
+  horario: string
+  ordem: number
+  alimentos: Alimento[]
+}
+
+export interface RefeicaoInput {
+  nome: string
+  horario?: string
+  ordem?: number
+}
+
+export interface PlanoNutricional {
+  id: string
+  aluno_id: string
+  aluno_nome?: string
+  nome: string
+  objetivo: string
+  ativo: boolean
+  calorias_alvo: number
+  proteina_alvo: number
+  carboidrato_alvo: number
+  gordura_alvo: number
+  refeicoes: Refeicao[]
+  created_at: string
+  updated_at: string
+}
+
+export interface PlanoNutricionalInput {
+  aluno_id: string
+  nome: string
+  objetivo: string
+  calorias_alvo: number
+  proteina_alvo: number
+  carboidrato_alvo: number
+  gordura_alvo: number
+}
+
+export interface MedidaCorporal {
+  local: string
+  valor: number
+  unidade: string
+}
+
+export interface AvaliacaoAnamnese {
+  historico_medico: string
+  lesoes: string
+  medicamentos: string
+  objetivos: string
+  nivel_atividade: string
+  observacoes: string
+}
+
+export interface AvaliacaoFisica {
+  peso: number
+  altura: number
+  imc: number
+  medidas: MedidaCorporal[]
+}
+
+export interface AvaliacaoBioimpedancia {
+  gordura_percentual: number
+  massa_magra: number
+  agua_corporal: number
+  taxa_metabolica: number
+  idade_metabolica: number
+  gordura_visceral: number
+}
+
+export type AvaliacaoTipo = 'anamnese' | 'fisica' | 'bioimpedancia'
+
+export interface Avaliacao {
+  id: string
+  aluno_id: string
+  aluno_nome?: string
+  tipo: AvaliacaoTipo
+  dados: AvaliacaoAnamnese | AvaliacaoFisica | AvaliacaoBioimpedancia
+  observacoes: string | null
+  created_at: string
+}
+
+export interface AvaliacaoInput {
+  aluno_id: string
+  tipo: AvaliacaoTipo
+  dados: AvaliacaoAnamnese | AvaliacaoFisica | AvaliacaoBioimpedancia
+  observacoes?: string
+}
+
+export interface TenantConfig {
+  id: string
+  nome: string
+  slug: string
+  plano: string
+  cor_primaria: string
+  cor_secundaria: string
+  logo_url: string | null
+  favicon_url: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface TenantBranding {
+  nome: string
+  cor_primaria: string
+  cor_secundaria: string
+  logo_url: string | null
+  favicon_url: string | null
+}
+
 // ── API Client ──
 
 export const api = {
@@ -327,5 +519,93 @@ export const api = {
   financeiro: {
     resumo: () =>
       request<ResumoFinanceiro>('GET', '/api/v1/financeiro/resumo'),
+  },
+
+  // ── Sprint 3 ──
+
+  briefings: {
+    list: (alunoId?: string) =>
+      request<Briefing[]>('GET', `/api/v1/briefings${alunoId ? `?aluno_id=${alunoId}` : ''}`),
+    create: (alunoId: string) =>
+      request<BriefingDetail>('POST', '/api/v1/briefings', { aluno_id: alunoId }),
+    get: (id: string) =>
+      request<BriefingDetail>('GET', `/api/v1/briefings/${id}`),
+    responder: (id: string, perguntaId: string, resposta: string) =>
+      request<void>('POST', `/api/v1/briefings/${id}/respostas`, { pergunta_id: perguntaId, resposta }),
+    gerar: (id: string) =>
+      request<{ job_id: string }>('POST', `/api/v1/briefings/${id}/gerar`),
+    status: (id: string) =>
+      request<{ status: string }>('GET', `/api/v1/briefings/${id}/status`),
+  },
+
+  llm: {
+    gerarTreino: (params: GerarTreinoParams) =>
+      request<{ job_id: string }>('POST', '/api/v1/llm/gerar-treino', params),
+    gerarDieta: (params: GerarDietaParams) =>
+      request<{ job_id: string }>('POST', '/api/v1/llm/gerar-dieta', params),
+    jobs: () =>
+      request<LLMJob[]>('GET', '/api/v1/llm/jobs'),
+    job: (id: string) =>
+      request<LLMJob>('GET', `/api/v1/llm/jobs/${id}`),
+  },
+
+  nutricao: {
+    planos: {
+      list: (alunoId?: string) =>
+        request<PlanoNutricional[]>('GET', `/api/v1/nutricao/planos${alunoId ? `?aluno_id=${alunoId}` : ''}`),
+      get: (id: string) =>
+        request<PlanoNutricional>('GET', `/api/v1/nutricao/planos/${id}`),
+      create: (data: PlanoNutricionalInput) =>
+        request<PlanoNutricional>('POST', '/api/v1/nutricao/planos', data),
+      update: (id: string, data: Partial<PlanoNutricionalInput>) =>
+        request<PlanoNutricional>('PUT', `/api/v1/nutricao/planos/${id}`, data),
+      delete: (id: string) =>
+        request<{ ok: boolean }>('DELETE', `/api/v1/nutricao/planos/${id}`),
+    },
+    refeicoes: {
+      create: (planoId: string, data: RefeicaoInput) =>
+        request<Refeicao>('POST', `/api/v1/nutricao/planos/${planoId}/refeicoes`, data),
+      update: (planoId: string, id: string, data: Partial<RefeicaoInput>) =>
+        request<Refeicao>('PUT', `/api/v1/nutricao/planos/${planoId}/refeicoes/${id}`, data),
+      delete: (planoId: string, id: string) =>
+        request<{ ok: boolean }>('DELETE', `/api/v1/nutricao/planos/${planoId}/refeicoes/${id}`),
+    },
+    alimentos: {
+      create: (planoId: string, refeicaoId: string, data: AlimentoInput) =>
+        request<Alimento>('POST', `/api/v1/nutricao/planos/${planoId}/refeicoes/${refeicaoId}/alimentos`, data),
+      update: (planoId: string, refeicaoId: string, id: string, data: Partial<AlimentoInput>) =>
+        request<Alimento>('PUT', `/api/v1/nutricao/planos/${planoId}/refeicoes/${refeicaoId}/alimentos/${id}`, data),
+      delete: (planoId: string, refeicaoId: string, id: string) =>
+        request<{ ok: boolean }>('DELETE', `/api/v1/nutricao/planos/${planoId}/refeicoes/${refeicaoId}/alimentos/${id}`),
+    },
+    meuPlano: () =>
+      request<PlanoNutricional | null>('GET', '/api/v1/nutricao/meu-plano'),
+  },
+
+  avaliacoes: {
+    list: (alunoId?: string, tipo?: AvaliacaoTipo) => {
+      const params = new URLSearchParams()
+      if (alunoId) params.set('aluno_id', alunoId)
+      if (tipo) params.set('tipo', tipo)
+      const qs = params.toString()
+      return request<Avaliacao[]>('GET', `/api/v1/avaliacoes${qs ? `?${qs}` : ''}`)
+    },
+    get: (id: string) =>
+      request<Avaliacao>('GET', `/api/v1/avaliacoes/${id}`),
+    create: (data: AvaliacaoInput) =>
+      request<Avaliacao>('POST', '/api/v1/avaliacoes', data),
+    update: (id: string, data: Partial<AvaliacaoInput>) =>
+      request<Avaliacao>('PUT', `/api/v1/avaliacoes/${id}`, data),
+    delete: (id: string) =>
+      request<{ ok: boolean }>('DELETE', `/api/v1/avaliacoes/${id}`),
+  },
+
+  tenant: {
+    config: () =>
+      request<TenantConfig>('GET', '/api/v1/tenant/config'),
+    updateConfig: (data: Partial<TenantConfig>) =>
+      request<TenantConfig>('PUT', '/api/v1/tenant/config', data),
+    branding: () =>
+      request<TenantBranding>('GET', '/api/v1/tenant/branding'),
   },
 }

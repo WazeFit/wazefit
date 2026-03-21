@@ -12,6 +12,11 @@ import { execucoesRouter, rankingRouter, evolucaoRouter } from './routes/execuco
 import { chatRouter } from './routes/chat'
 import { mediaRouter } from './routes/media'
 import { financeiroRouter } from './routes/financeiro'
+import { briefingRouter } from './routes/briefing'
+import { llmRouter } from './routes/llm'
+import { nutricaoRouter } from './routes/nutricao'
+import { avaliacoesRouter } from './routes/avaliacoes'
+import { tenantRouter } from './routes/tenant'
 
 // ── App principal ──
 const app = new Hono<{
@@ -47,6 +52,11 @@ app.route('/api/v1/evolucao', evolucaoRouter)
 app.route('/api/v1/chat', chatRouter)
 app.route('/api/v1/media', mediaRouter)
 app.route('/api/v1', financeiroRouter)
+app.route('/api/v1/briefings', briefingRouter)
+app.route('/api/v1/llm', llmRouter)
+app.route('/api/v1/nutricao', nutricaoRouter)
+app.route('/api/v1/avaliacoes', avaliacoesRouter)
+app.route('/api/v1/tenant', tenantRouter)
 
 // ── 404 fallback ──
 app.notFound((c) => {

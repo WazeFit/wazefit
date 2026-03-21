@@ -316,6 +316,198 @@ export const briefings = sqliteTable(
 )
 
 // ═══════════════════════════════════════════════════════════════
+// 12. PLANOS NUTRICIONAIS
+// ═══════════════════════════════════════════════════════════════
+export const planosNutricionais = sqliteTable(
+  'planos_nutricionais',
+  {
+    id: text('id').primaryKey(),
+    tenant_id: text('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    aluno_id: text('aluno_id')
+      .notNull()
+      .references(() => alunos.id, { onDelete: 'cascade' }),
+    expert_id: text('expert_id')
+      .notNull()
+      .references(() => experts.id, { onDelete: 'cascade' }),
+    nome: text('nome').notNull(),
+    objetivo: text('objetivo'),
+    calorias_diarias: integer('calorias_diarias'),
+    proteina_g: real('proteina_g'),
+    carboidrato_g: real('carboidrato_g'),
+    gordura_g: real('gordura_g'),
+    observacoes: text('observacoes'),
+    ativo: integer('ativo', { mode: 'boolean' }).notNull().default(true),
+    criado_em: text('criado_em').notNull().default(now),
+    atualizado_em: text('atualizado_em').notNull().default(now),
+    deletado_em: text('deletado_em'),
+  },
+  (t) => [
+    index('idx_planos_nutricionais_tenant').on(t.tenant_id),
+    index('idx_planos_nutricionais_aluno').on(t.aluno_id),
+    index('idx_planos_nutricionais_expert').on(t.expert_id),
+  ],
+)
+
+// ═══════════════════════════════════════════════════════════════
+// 13. REFEIÇÕES
+// ═══════════════════════════════════════════════════════════════
+export const refeicoes = sqliteTable(
+  'refeicoes',
+  {
+    id: text('id').primaryKey(),
+    plano_id: text('plano_id')
+      .notNull()
+      .references(() => planosNutricionais.id, { onDelete: 'cascade' }),
+    tenant_id: text('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    nome: text('nome').notNull(),
+    horario: text('horario'),
+    ordem: integer('ordem').notNull().default(0),
+    criado_em: text('criado_em').notNull().default(now),
+  },
+  (t) => [
+    index('idx_refeicoes_plano').on(t.plano_id),
+    index('idx_refeicoes_tenant').on(t.tenant_id),
+  ],
+)
+
+// ═══════════════════════════════════════════════════════════════
+// 14. ALIMENTOS DA REFEIÇÃO
+// ═══════════════════════════════════════════════════════════════
+export const alimentosRefeicao = sqliteTable(
+  'alimentos_refeicao',
+  {
+    id: text('id').primaryKey(),
+    refeicao_id: text('refeicao_id')
+      .notNull()
+      .references(() => refeicoes.id, { onDelete: 'cascade' }),
+    tenant_id: text('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    nome: text('nome').notNull(),
+    quantidade: real('quantidade').notNull(),
+    unidade: text('unidade').notNull(),
+    calorias: real('calorias'),
+    proteina_g: real('proteina_g'),
+    carboidrato_g: real('carboidrato_g'),
+    gordura_g: real('gordura_g'),
+    observacao: text('observacao'),
+  },
+  (t) => [
+    index('idx_alimentos_refeicao').on(t.refeicao_id),
+    index('idx_alimentos_tenant').on(t.tenant_id),
+  ],
+)
+
+// ═══════════════════════════════════════════════════════════════
+// 15. AVALIAÇÕES
+// ═══════════════════════════════════════════════════════════════
+export const avaliacoes = sqliteTable(
+  'avaliacoes',
+  {
+    id: text('id').primaryKey(),
+    tenant_id: text('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    aluno_id: text('aluno_id')
+      .notNull()
+      .references(() => alunos.id, { onDelete: 'cascade' }),
+    expert_id: text('expert_id')
+      .notNull()
+      .references(() => experts.id, { onDelete: 'cascade' }),
+    tipo: text('tipo', { enum: ['anamnese', 'fisica', 'bioimpedancia'] }).notNull(),
+    data: text('data').notNull(),
+    dados_json: text('dados_json').notNull().default('{}'),
+    observacoes: text('observacoes'),
+    criado_em: text('criado_em').notNull().default(now),
+    atualizado_em: text('atualizado_em').notNull().default(now),
+    deletado_em: text('deletado_em'),
+  },
+  (t) => [
+    index('idx_avaliacoes_tenant').on(t.tenant_id),
+    index('idx_avaliacoes_aluno').on(t.aluno_id),
+    index('idx_avaliacoes_tipo').on(t.tenant_id, t.tipo),
+  ],
+)
+
+// ═══════════════════════════════════════════════════════════════
+// 16. BRIEFING PERGUNTAS
+// ═══════════════════════════════════════════════════════════════
+export const briefingPerguntas = sqliteTable(
+  'briefing_perguntas',
+  {
+    id: text('id').primaryKey(),
+    briefing_id: text('briefing_id')
+      .notNull()
+      .references(() => briefings.id, { onDelete: 'cascade' }),
+    tenant_id: text('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    pergunta: text('pergunta').notNull(),
+    resposta: text('resposta'),
+    ordem: integer('ordem').notNull().default(0),
+    criado_em: text('criado_em').notNull().default(now),
+  },
+  (t) => [
+    index('idx_briefing_perguntas_briefing').on(t.briefing_id),
+    index('idx_briefing_perguntas_tenant').on(t.tenant_id),
+  ],
+)
+
+// ═══════════════════════════════════════════════════════════════
+// 17. LLM JOBS
+// ═══════════════════════════════════════════════════════════════
+export const llmJobs = sqliteTable(
+  'llm_jobs',
+  {
+    id: text('id').primaryKey(),
+    tenant_id: text('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    tipo: text('tipo', { enum: ['briefing', 'treino', 'dieta', 'avaliacao'] }).notNull(),
+    input_json: text('input_json').notNull().default('{}'),
+    output_json: text('output_json'),
+    status: text('status', { enum: ['pending', 'processing', 'completed', 'failed'] })
+      .notNull()
+      .default('pending'),
+    tokens_input: integer('tokens_input'),
+    tokens_output: integer('tokens_output'),
+    custo_centavos: integer('custo_centavos'),
+    erro: text('erro'),
+    criado_em: text('criado_em').notNull().default(now),
+    completado_em: text('completado_em'),
+  },
+  (t) => [
+    index('idx_llm_jobs_tenant').on(t.tenant_id, t.status),
+    index('idx_llm_jobs_status').on(t.status, t.criado_em),
+  ],
+)
+
+// ═══════════════════════════════════════════════════════════════
+// 18. TENANT CONFIG (white label)
+// ═══════════════════════════════════════════════════════════════
+export const tenantConfig = sqliteTable(
+  'tenant_config',
+  {
+    id: text('id').primaryKey(),
+    tenant_id: text('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    chave: text('chave').notNull(),
+    valor: text('valor'),
+    criado_em: text('criado_em').notNull().default(now),
+    atualizado_em: text('atualizado_em').notNull().default(now),
+  },
+  (t) => [
+    uniqueIndex('idx_tenant_config_unico').on(t.tenant_id, t.chave),
+    index('idx_tenant_config_tenant').on(t.tenant_id),
+  ],
+)
+
+// ═══════════════════════════════════════════════════════════════
 // 11. AUDIT LOG
 // ═══════════════════════════════════════════════════════════════
 export const audit_log = sqliteTable(

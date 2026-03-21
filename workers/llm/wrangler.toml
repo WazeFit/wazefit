@@ -1,0 +1,20 @@
+name = "wazefit-llm"
+main = "src/index.ts"
+compatibility_date = "2024-12-30"
+compatibility_flags = ["nodejs_compat"]
+
+# ── D1 Database (para atualizar llm_jobs e briefing_perguntas) ──
+[[d1_databases]]
+binding = "DB"
+database_name = "wazefit-db"
+database_id = "b4688d85-9150-4f89-b2c4-b22543c797fd"
+
+# ── Queue Consumer ──
+[[queues.consumers]]
+queue = "wazefit-llm-jobs"
+max_batch_size = 1
+max_retries = 3
+dead_letter_queue = "wazefit-llm-dlq"
+
+[vars]
+ENVIRONMENT = "production"
