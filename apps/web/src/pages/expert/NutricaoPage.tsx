@@ -95,9 +95,9 @@ function PlanosList({ onNavigate }: { onNavigate?: (path: string) => void }) {
                     <p className="text-sm text-gray-400 mt-0.5">{p.aluno_nome} · {p.objetivo}</p>
                   </div>
                   <div className="text-right text-sm">
-                    <p className="text-green-400 font-medium">{p.calorias_alvo} kcal</p>
+                    <p className="text-green-400 font-medium">{p.calorias_diarias} kcal</p>
                     <p className="text-xs text-gray-500">
-                      P:{p.proteina_alvo}g · C:{p.carboidrato_alvo}g · G:{p.gordura_alvo}g
+                      P:{p.proteina_g}g · C:{p.carboidrato_g}g · G:{p.gordura_g}g
                     </p>
                   </div>
                 </div>
@@ -127,8 +127,8 @@ function CriarPlanoModal({ alunos, onClose, onCreated }: {
 }) {
   const [form, setForm] = useState({
     aluno_id: '', nome: '', objetivo: '',
-    calorias_alvo: '2000', proteina_alvo: '150',
-    carboidrato_alvo: '250', gordura_alvo: '70',
+    calorias_diarias: '2000', proteina_g: '150',
+    carboidrato_g: '250', gordura_g: '70',
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -141,10 +141,10 @@ function CriarPlanoModal({ alunos, onClose, onCreated }: {
         aluno_id: form.aluno_id,
         nome: form.nome,
         objetivo: form.objetivo,
-        calorias_alvo: parseInt(form.calorias_alvo),
-        proteina_alvo: parseInt(form.proteina_alvo),
-        carboidrato_alvo: parseInt(form.carboidrato_alvo),
-        gordura_alvo: parseInt(form.gordura_alvo),
+        calorias_diarias: parseInt(form.calorias_diarias),
+        proteina_g: parseInt(form.proteina_g),
+        carboidrato_g: parseInt(form.carboidrato_g),
+        gordura_g: parseInt(form.gordura_g),
       })
       onCreated(plano.id)
     } catch (err) {
@@ -171,10 +171,10 @@ function CriarPlanoModal({ alunos, onClose, onCreated }: {
           { value: 'manutencao', label: 'Manutenção' },
         ]} value={form.objetivo} onChange={e => update('objetivo', e.target.value)} />
         <div className="grid grid-cols-2 gap-3">
-          <Input label="Calorias" type="number" value={form.calorias_alvo} onChange={e => update('calorias_alvo', e.target.value)} />
-          <Input label="Proteína (g)" type="number" value={form.proteina_alvo} onChange={e => update('proteina_alvo', e.target.value)} />
-          <Input label="Carboidrato (g)" type="number" value={form.carboidrato_alvo} onChange={e => update('carboidrato_alvo', e.target.value)} />
-          <Input label="Gordura (g)" type="number" value={form.gordura_alvo} onChange={e => update('gordura_alvo', e.target.value)} />
+          <Input label="Calorias" type="number" value={form.calorias_diarias} onChange={e => update('calorias_diarias', e.target.value)} />
+          <Input label="Proteína (g)" type="number" value={form.proteina_g} onChange={e => update('proteina_g', e.target.value)} />
+          <Input label="Carboidrato (g)" type="number" value={form.carboidrato_g} onChange={e => update('carboidrato_g', e.target.value)} />
+          <Input label="Gordura (g)" type="number" value={form.gordura_g} onChange={e => update('gordura_g', e.target.value)} />
         </div>
         <div className="flex justify-end gap-2 pt-2">
           <Button variant="ghost" onClick={onClose}>Cancelar</Button>
@@ -212,12 +212,12 @@ function PlanoDetail({ id, onBack }: { id: string; onBack?: () => void }) {
   if (!plano) return <EmptyState icon="❌" title="Plano não encontrado" />
 
   // Calcular totais
-  const totais = plano.refeicoes.reduce((acc, ref) => {
+  const totais = (plano.refeicoes ?? [])?.reduce((acc, ref) => {
     const refTotais = ref.alimentos.reduce((ra, al) => ({
       cal: ra.cal + al.calorias,
-      prot: ra.prot + al.proteina,
-      carb: ra.carb + al.carboidrato,
-      gord: ra.gord + al.gordura,
+      prot: ra.prot + al.proteina_g,
+      carb: ra.carb + al.carboidrato_g,
+      gord: ra.gord + al.gordura_g,
     }), { cal: 0, prot: 0, carb: 0, gord: 0 })
     return {
       cal: acc.cal + refTotais.cal,
@@ -242,10 +242,10 @@ function PlanoDetail({ id, onBack }: { id: string; onBack?: () => void }) {
 
       {/* Macros resumo */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <MacroCard label="Calorias" atual={totais.cal} alvo={plano.calorias_alvo} unit="kcal" />
-        <MacroCard label="Proteína" atual={totais.prot} alvo={plano.proteina_alvo} unit="g" />
-        <MacroCard label="Carboidrato" atual={totais.carb} alvo={plano.carboidrato_alvo} unit="g" />
-        <MacroCard label="Gordura" atual={totais.gord} alvo={plano.gordura_alvo} unit="g" />
+        <MacroCard label="Calorias" atual={totais.cal} alvo={plano.calorias_diarias ?? 0} unit="kcal" />
+        <MacroCard label="Proteína" atual={totais.prot} alvo={plano.proteina_g ?? 0} unit="g" />
+        <MacroCard label="Carboidrato" atual={totais.carb} alvo={plano.carboidrato_g ?? 0} unit="g" />
+        <MacroCard label="Gordura" atual={totais.gord} alvo={plano.gordura_g ?? 0} unit="g" />
       </div>
 
       {/* Refeições */}
@@ -255,10 +255,10 @@ function PlanoDetail({ id, onBack }: { id: string; onBack?: () => void }) {
           <Button size="sm" onClick={() => setAddRefeicao(true)}>+ Refeição</Button>
         </div>
 
-        {plano.refeicoes.length === 0 ? (
+        {(plano.refeicoes ?? [])?.length === 0 ? (
           <EmptyState icon="🍽️" title="Nenhuma refeição" description="Adicione refeições ao plano" />
         ) : (
-          plano.refeicoes.sort((a, b) => a.ordem - b.ordem).map(ref => {
+          (plano.refeicoes ?? [])?.sort((a, b) => a.ordem - b.ordem).map(ref => {
             const refCal = ref.alimentos.reduce((s, a) => s + a.calorias, 0)
             const isExpanded = expandedRef === ref.id
             return (
@@ -287,9 +287,9 @@ function PlanoDetail({ id, onBack }: { id: string; onBack?: () => void }) {
                             </div>
                             <div className="flex gap-3 text-xs text-gray-400">
                               <span>{al.calorias}kcal</span>
-                              <span>P:{al.proteina}g</span>
-                              <span>C:{al.carboidrato}g</span>
-                              <span>G:{al.gordura}g</span>
+                              <span>P:{al.proteina_g}g</span>
+                              <span>C:{al.carboidrato_g}g</span>
+                              <span>G:{al.gordura_g}g</span>
                             </div>
                           </div>
                         ))}
@@ -395,7 +395,7 @@ function AddAlimentoModal({ planoId, refeicaoId, onClose, onAdded }: {
   planoId: string; refeicaoId: string; onClose: () => void; onAdded: () => void
 }) {
   const [form, setForm] = useState<AlimentoInput>({
-    nome: '', quantidade: 100, unidade: 'g', calorias: 0, proteina: 0, carboidrato: 0, gordura: 0,
+    nome: '', quantidade: 100, unidade: 'g', calorias: 0, proteina_g: 0, carboidrato_g: 0, gordura_g: 0,
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -435,9 +435,9 @@ function AddAlimentoModal({ planoId, refeicaoId, onClose, onAdded }: {
         </div>
         <div className="grid grid-cols-2 gap-3">
           <Input label="Calorias" type="number" value={String(form.calorias)} onChange={e => update('calorias', Number(e.target.value))} />
-          <Input label="Proteína (g)" type="number" value={String(form.proteina)} onChange={e => update('proteina', Number(e.target.value))} />
-          <Input label="Carboidrato (g)" type="number" value={String(form.carboidrato)} onChange={e => update('carboidrato', Number(e.target.value))} />
-          <Input label="Gordura (g)" type="number" value={String(form.gordura)} onChange={e => update('gordura', Number(e.target.value))} />
+          <Input label="Proteína (g)" type="number" value={String(form.proteina_g)} onChange={e => update('proteina_g', Number(e.target.value))} />
+          <Input label="Carboidrato (g)" type="number" value={String(form.carboidrato_g)} onChange={e => update('carboidrato_g', Number(e.target.value))} />
+          <Input label="Gordura (g)" type="number" value={String(form.gordura_g)} onChange={e => update('gordura_g', Number(e.target.value))} />
         </div>
         <div className="flex justify-end gap-2">
           <Button variant="ghost" onClick={onClose}>Cancelar</Button>

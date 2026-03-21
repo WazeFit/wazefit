@@ -46,6 +46,14 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   return res.json() as Promise<T>
 }
 
+/** Wrapper for paginated endpoints that return { data: T[], meta: {...} } — extracts .data */
+async function requestList<T>(method: string, path: string, body?: unknown): Promise<T[]> {
+  const res = await request<{ data: T[] } | T[]>(method, path, body)
+  if (Array.isArray(res)) return res
+  if (res && typeof res === 'object' && 'data' in res && Array.isArray(res.data)) return res.data
+  return res as unknown as T[]
+}
+
 // ── Types ──
 
 export interface Exercicio {
@@ -280,9 +288,9 @@ export interface Alimento {
   quantidade: number
   unidade: string
   calorias: number
-  proteina: number
-  carboidrato: number
-  gordura: number
+  proteina_g: number
+  carboidrato_g: number
+  gordura_g: number
 }
 
 export interface AlimentoInput {
@@ -290,9 +298,9 @@ export interface AlimentoInput {
   quantidade: number
   unidade: string
   calorias: number
-  proteina: number
-  carboidrato: number
-  gordura: number
+  proteina_g: number
+  carboidrato_g: number
+  gordura_g: number
 }
 
 export interface Refeicao {
@@ -313,26 +321,29 @@ export interface PlanoNutricional {
   id: string
   aluno_id: string
   aluno_nome?: string
+  expert_id?: string
   nome: string
-  objetivo: string
+  objetivo: string | null
   ativo: boolean
-  calorias_alvo: number
-  proteina_alvo: number
-  carboidrato_alvo: number
-  gordura_alvo: number
-  refeicoes: Refeicao[]
-  created_at: string
-  updated_at: string
+  calorias_diarias: number | null
+  proteina_g: number | null
+  carboidrato_g: number | null
+  gordura_g: number | null
+  observacoes?: string | null
+  refeicoes?: Refeicao[]
+  criado_em: string
+  atualizado_em: string
 }
 
 export interface PlanoNutricionalInput {
   aluno_id: string
   nome: string
-  objetivo: string
-  calorias_alvo: number
-  proteina_alvo: number
-  carboidrato_alvo: number
-  gordura_alvo: number
+  objetivo?: string
+  calorias_diarias?: number
+  proteina_g?: number
+  carboidrato_g?: number
+  gordura_g?: number
+  observacoes?: string
 }
 
 export interface MedidaCorporal {
@@ -372,30 +383,26 @@ export interface Avaliacao {
   id: string
   aluno_id: string
   aluno_nome?: string
+  expert_id?: string
   tipo: AvaliacaoTipo
-  dados: AvaliacaoAnamnese | AvaliacaoFisica | AvaliacaoBioimpedancia
+  data: string
+  dados_json?: Record<string, unknown>
   observacoes: string | null
-  created_at: string
+  criado_em: string
+  atualizado_em: string
 }
 
 export interface AvaliacaoInput {
   aluno_id: string
   tipo: AvaliacaoTipo
-  dados: AvaliacaoAnamnese | AvaliacaoFisica | AvaliacaoBioimpedancia
+  data: string
+  dados_json: Record<string, unknown>
   observacoes?: string
 }
 
 export interface TenantConfig {
-  id: string
-  nome: string
-  slug: string
-  plano: string
-  cor_primaria: string
-  cor_secundaria: string
-  logo_url: string | null
-  favicon_url: string | null
-  created_at: string
-  updated_at: string
+  tenant_id: string
+  config: Record<string, string | null>
 }
 
 export interface TenantBranding {
@@ -426,8 +433,13 @@ export const api = {
   },
 
   exercicios: {
-    list: (grupo?: string) =>
-      request<Exercicio[]>('GET', `/api/v1/exercicios${grupo ? `?grupo_muscular=${encodeURIComponent(grupo)}` : ''}`),
+    list: (busca?: string, grupo?: string) => {
+      const params = new URLSearchParams()
+      if (busca) params.set('busca', busca)
+      if (grupo) params.set('grupo_muscular', grupo)
+      const qs = params.toString()
+      return requestList<Exercicio>('GET', `/api/v1/exercicios${qs ? `?${qs}` : ''}`)
+    },
     get: (id: string) =>
       request<Exercicio>('GET', `/api/v1/exercicios/${id}`),
     create: (data: ExercicioInput) =>
@@ -440,7 +452,7 @@ export const api = {
 
   fichas: {
     list: () =>
-      request<Ficha[]>('GET', '/api/v1/fichas'),
+      requestList<Ficha>('GET', '/api/v1/fichas'),
     get: (id: string) =>
       request<Ficha>('GET', `/api/v1/fichas/${id}`),
     create: (data: FichaInput) =>
@@ -455,7 +467,7 @@ export const api = {
 
   biblioteca: {
     list: () =>
-      request<Template[]>('GET', '/api/v1/biblioteca'),
+      requestList<Template>('GET', '/api/v1/biblioteca'),
   },
 
   calendario: {
@@ -479,7 +491,7 @@ export const api = {
 
   ranking: {
     list: () =>
-      request<RankingEntry[]>('GET', '/api/v1/ranking'),
+      requestList<RankingEntry>('GET', '/api/v1/ranking'),
   },
 
   evolucao: {
@@ -489,13 +501,13 @@ export const api = {
 
   chat: {
     mensagens: (alunoId: string, since?: string) =>
-      request<ChatMensagem[]>('GET', `/api/v1/chat/${alunoId}/mensagens${since ? `?since=${encodeURIComponent(since)}` : ''}`),
+      requestList<ChatMensagem>('GET', `/api/v1/chat/${alunoId}/mensagens${since ? `?since=${encodeURIComponent(since)}` : ''}`),
     enviar: (alunoId: string, conteudo: string, tipo = 'texto') =>
       request<ChatMensagem>('POST', `/api/v1/chat/${alunoId}/mensagens`, { conteudo, tipo }),
     marcarLidas: (alunoId: string) =>
       request<{ ok: boolean }>('PUT', `/api/v1/chat/${alunoId}/mensagens/lidas`),
     conversas: () =>
-      request<Conversa[]>('GET', '/api/v1/chat/conversas'),
+      requestList<Conversa>('GET', '/api/v1/chat/conversas'),
   },
 
   media: {
@@ -507,7 +519,7 @@ export const api = {
 
   cobrancas: {
     list: (status?: string) =>
-      request<Cobranca[]>('GET', `/api/v1/cobrancas${status ? `?status=${status}` : ''}`),
+      requestList<Cobranca>('GET', `/api/v1/cobrancas${status ? `?status=${status}` : ''}`),
     get: (id: string) =>
       request<Cobranca>('GET', `/api/v1/cobrancas/${id}`),
     create: (data: CobrancaInput) =>
@@ -525,7 +537,7 @@ export const api = {
 
   briefings: {
     list: (alunoId?: string) =>
-      request<Briefing[]>('GET', `/api/v1/briefings${alunoId ? `?aluno_id=${alunoId}` : ''}`),
+      requestList<Briefing>('GET', `/api/v1/briefings${alunoId ? `?aluno_id=${alunoId}` : ''}`),
     create: (alunoId: string) =>
       request<BriefingDetail>('POST', '/api/v1/briefings', { aluno_id: alunoId }),
     get: (id: string) =>
@@ -544,7 +556,7 @@ export const api = {
     gerarDieta: (params: GerarDietaParams) =>
       request<{ job_id: string }>('POST', '/api/v1/llm/gerar-dieta', params),
     jobs: () =>
-      request<LLMJob[]>('GET', '/api/v1/llm/jobs'),
+      requestList<LLMJob>('GET', '/api/v1/llm/jobs'),
     job: (id: string) =>
       request<LLMJob>('GET', `/api/v1/llm/jobs/${id}`),
   },
@@ -552,7 +564,7 @@ export const api = {
   nutricao: {
     planos: {
       list: (alunoId?: string) =>
-        request<PlanoNutricional[]>('GET', `/api/v1/nutricao/planos${alunoId ? `?aluno_id=${alunoId}` : ''}`),
+        requestList<PlanoNutricional>('GET', `/api/v1/nutricao/planos${alunoId ? `?aluno_id=${alunoId}` : ''}`),
       get: (id: string) =>
         request<PlanoNutricional>('GET', `/api/v1/nutricao/planos/${id}`),
       create: (data: PlanoNutricionalInput) =>
@@ -565,21 +577,22 @@ export const api = {
     refeicoes: {
       create: (planoId: string, data: RefeicaoInput) =>
         request<Refeicao>('POST', `/api/v1/nutricao/planos/${planoId}/refeicoes`, data),
-      update: (planoId: string, id: string, data: Partial<RefeicaoInput>) =>
-        request<Refeicao>('PUT', `/api/v1/nutricao/planos/${planoId}/refeicoes/${id}`, data),
-      delete: (planoId: string, id: string) =>
-        request<{ ok: boolean }>('DELETE', `/api/v1/nutricao/planos/${planoId}/refeicoes/${id}`),
+      update: (_planoId: string, id: string, data: Partial<RefeicaoInput>) =>
+        request<Refeicao>('PUT', `/api/v1/nutricao/refeicoes/${id}`, data),
+      delete: (_planoId: string, id: string) =>
+        request<{ ok: boolean }>('DELETE', `/api/v1/nutricao/refeicoes/${id}`),
     },
     alimentos: {
-      create: (planoId: string, refeicaoId: string, data: AlimentoInput) =>
-        request<Alimento>('POST', `/api/v1/nutricao/planos/${planoId}/refeicoes/${refeicaoId}/alimentos`, data),
-      update: (planoId: string, refeicaoId: string, id: string, data: Partial<AlimentoInput>) =>
-        request<Alimento>('PUT', `/api/v1/nutricao/planos/${planoId}/refeicoes/${refeicaoId}/alimentos/${id}`, data),
-      delete: (planoId: string, refeicaoId: string, id: string) =>
-        request<{ ok: boolean }>('DELETE', `/api/v1/nutricao/planos/${planoId}/refeicoes/${refeicaoId}/alimentos/${id}`),
+      create: (_planoId: string, refeicaoId: string, data: AlimentoInput) =>
+        request<Alimento>('POST', `/api/v1/nutricao/refeicoes/${refeicaoId}/alimentos`, data),
+      update: (_planoId: string, _refeicaoId: string, id: string, data: Partial<AlimentoInput>) =>
+        request<Alimento>('PUT', `/api/v1/nutricao/alimentos/${id}`, data),
+      delete: (_planoId: string, _refeicaoId: string, id: string) =>
+        request<{ ok: boolean }>('DELETE', `/api/v1/nutricao/alimentos/${id}`),
     },
+    /** @deprecated use planos.list() com filtro automático por role */
     meuPlano: () =>
-      request<PlanoNutricional | null>('GET', '/api/v1/nutricao/meu-plano'),
+      requestList<PlanoNutricional>('GET', '/api/v1/nutricao/planos').then(p => p[0] ?? null),
   },
 
   avaliacoes: {
@@ -588,7 +601,7 @@ export const api = {
       if (alunoId) params.set('aluno_id', alunoId)
       if (tipo) params.set('tipo', tipo)
       const qs = params.toString()
-      return request<Avaliacao[]>('GET', `/api/v1/avaliacoes${qs ? `?${qs}` : ''}`)
+      return requestList<Avaliacao>('GET', `/api/v1/avaliacoes${qs ? `?${qs}` : ''}`)
     },
     get: (id: string) =>
       request<Avaliacao>('GET', `/api/v1/avaliacoes/${id}`),
@@ -603,7 +616,7 @@ export const api = {
   tenant: {
     config: () =>
       request<TenantConfig>('GET', '/api/v1/tenant/config'),
-    updateConfig: (data: Partial<TenantConfig>) =>
+    updateConfig: (data: Record<string, string | null | undefined>) =>
       request<TenantConfig>('PUT', '/api/v1/tenant/config', data),
     branding: () =>
       request<TenantBranding>('GET', '/api/v1/tenant/branding'),

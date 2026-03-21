@@ -2,6 +2,7 @@
  * Layout do Expert — sidebar + content.
  */
 import { Sidebar } from './Sidebar'
+import { ErrorBoundary } from './ErrorBoundary'
 import type { User, Tenant } from '../../stores/auth'
 
 interface Props {
@@ -17,7 +18,9 @@ export function ExpertLayout({ children, user, tenant, currentPath, onNavigate, 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
       <Sidebar user={user} tenant={tenant} currentPath={currentPath} onNavigate={onNavigate} onLogout={onLogout} />
-      <main className="ml-64 p-6 lg:p-8">{children}</main>
+      <main className="ml-64 p-6 lg:p-8">
+        <ErrorBoundary key={currentPath}>{children}</ErrorBoundary>
+      </main>
     </div>
   )
 }

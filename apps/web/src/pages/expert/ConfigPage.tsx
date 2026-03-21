@@ -3,7 +3,6 @@
  */
 import { useState, useEffect, useCallback } from 'react'
 import { api, ApiError } from '../../lib/api'
-import type { TenantConfig } from '../../lib/api'
 import { Button } from '../../components/ui/Button'
 import { Card, CardHeader, CardBody } from '../../components/ui/Card'
 import { Input } from '../../components/ui/Input'
@@ -13,7 +12,6 @@ import { useToast } from '../../components/ui/Toast'
 
 export function ConfigPage() {
   const { toast } = useToast()
-  const [config, setConfig] = useState<TenantConfig | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
@@ -24,11 +22,12 @@ export function ConfigPage() {
 
   const load = useCallback(async () => {
     try {
-      const cfg = await api.tenant.config()
-      setConfig(cfg)
-      setNome(cfg.nome || '')
-      setCorPrimaria(cfg.cor_primaria || '#22c55e')
-      setCorSecundaria(cfg.cor_secundaria || '#111827')
+      const res = await api.tenant.config()
+      const cfg = res.config || {}
+      setNome(cfg['nome_exibicao'] || '')
+      setCorPrimaria(cfg['cor_primaria'] || '#22c55e')
+      setCorSecundaria(cfg['cor_secundaria'] || '#111827')
+      setDescricao(cfg['descricao'] || '')
     } catch (err) {
       toast('error', err instanceof ApiError ? err.message : 'Erro ao carregar configurações')
     } finally {
@@ -42,10 +41,11 @@ export function ConfigPage() {
     try {
       setSaving(true)
       await api.tenant.updateConfig({
-        nome,
-        cor_primaria: corPrimaria,
-        cor_secundaria: corSecundaria,
-      })
+        nome_exibicao: nome || undefined,
+        cor_primaria: corPrimaria || undefined,
+        cor_secundaria: corSecundaria || undefined,
+        descricao: descricao || undefined,
+      } as Record<string, string | null>)
       toast('success', 'Configurações salvas com sucesso')
     } catch (err) {
       toast('error', err instanceof ApiError ? err.message : 'Erro ao salvar')
@@ -124,45 +124,10 @@ export function ConfigPage() {
                   Botão Secundário
                 </div>
               </div>
-              <div className="mt-3 flex gap-2">
-                <div style={{ backgroundColor: corPrimaria + '20', borderColor: corPrimaria + '40', color: corPrimaria }}
-                  className="px-3 py-1 rounded-full text-xs border">Badge 1</div>
-                <div style={{ backgroundColor: corPrimaria + '20', borderColor: corPrimaria + '40', color: corPrimaria }}
-                  className="px-3 py-1 rounded-full text-xs border">Badge 2</div>
-              </div>
             </div>
           </div>
         </CardBody>
       </Card>
-
-      {/* Info do Tenant */}
-      {config && (
-        <Card>
-          <CardHeader>
-            <h2 className="text-lg font-semibold text-white">ℹ️ Informações</h2>
-          </CardHeader>
-          <CardBody>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <p className="text-gray-500">Slug</p>
-                <p className="text-white font-mono">{config.slug}</p>
-              </div>
-              <div>
-                <p className="text-gray-500">Plano</p>
-                <p className="text-white capitalize">{config.plano}</p>
-              </div>
-              <div>
-                <p className="text-gray-500">Criado em</p>
-                <p className="text-white">{new Date(config.created_at).toLocaleDateString('pt-BR')}</p>
-              </div>
-              <div>
-                <p className="text-gray-500">Atualizado em</p>
-                <p className="text-white">{new Date(config.updated_at).toLocaleDateString('pt-BR')}</p>
-              </div>
-            </div>
-          </CardBody>
-        </Card>
-      )}
 
       <div className="flex justify-end">
         <Button onClick={handleSave} loading={saving} size="lg">

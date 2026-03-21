@@ -101,7 +101,7 @@ export function AvaliacoesPage() {
                         <Badge variant={info.variant}>{av.tipo}</Badge>
                       </div>
                       <p className="text-sm text-gray-400 mt-0.5">
-                        {av.aluno_nome} · {new Date(av.created_at).toLocaleDateString('pt-BR')}
+                        {av.aluno_nome} · {new Date(av.criado_em).toLocaleDateString('pt-BR')}
                       </p>
                     </div>
                     <div className="flex gap-2">
@@ -186,7 +186,7 @@ function CriarAvaliacaoModal({ alunos, onClose, onCreated }: { alunos: Aluno[]; 
     if (!dados) return
     try {
       setSaving(true); setError('')
-      await api.avaliacoes.create({ aluno_id: alunoId, tipo, dados, observacoes: observacoes || undefined })
+      await api.avaliacoes.create({ aluno_id: alunoId, tipo, data: new Date().toISOString().split('T')[0]!, dados_json: dados as unknown as Record<string, unknown>, observacoes: observacoes || undefined })
       toast('success', 'Avaliação criada')
       onCreated()
     } catch (err) {
@@ -336,9 +336,9 @@ function VisualizarAvaliacaoModal({ avaliacao, onClose }: { avaliacao: Avaliacao
 
   function renderDados() {
     switch (avaliacao.tipo) {
-      case 'anamnese': return renderAnamnese(avaliacao.dados as AvaliacaoAnamnese)
-      case 'fisica': return renderFisica(avaliacao.dados as AvaliacaoFisica)
-      case 'bioimpedancia': return renderBioimpedancia(avaliacao.dados as AvaliacaoBioimpedancia)
+      case 'anamnese': return renderAnamnese(avaliacao.dados_json as unknown as AvaliacaoAnamnese)
+      case 'fisica': return renderFisica(avaliacao.dados_json as unknown as AvaliacaoFisica)
+      case 'bioimpedancia': return renderBioimpedancia(avaliacao.dados_json as unknown as AvaliacaoBioimpedancia)
     }
   }
 
@@ -348,7 +348,7 @@ function VisualizarAvaliacaoModal({ avaliacao, onClose }: { avaliacao: Avaliacao
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm text-gray-400">{avaliacao.aluno_nome}</p>
-            <p className="text-xs text-gray-500">{new Date(avaliacao.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+            <p className="text-xs text-gray-500">{new Date(avaliacao.criado_em).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
           </div>
           <Badge variant={info.variant}>{avaliacao.tipo}</Badge>
         </div>
