@@ -37,7 +37,12 @@ export function App() {
         const path = window.location.pathname
         if (path === '/login') setPage('login')
         else if (path === '/register') setPage('register')
-        else setPage('landing')
+        else if (path === '/' || path === '') setPage('landing')
+        else {
+          // Rota protegida sem auth → redirecionar pro login
+          window.history.replaceState(null, '', '/login')
+          setPage('login')
+        }
       }
     }
     init()
