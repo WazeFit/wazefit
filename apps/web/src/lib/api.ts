@@ -70,9 +70,8 @@ async function request<T>(
       }
       return retryRes.json() as Promise<T>
     } else {
-      // Refresh falhou — limpar tokens
+      // Refresh falhou — limpar tokens, deixar o Router redirecionar
       tokenStore?.clearTokens()
-      window.location.href = '/login'
       throw new ApiClientError(401, { error: 'Sessão expirada.', code: 401 })
     }
   }
