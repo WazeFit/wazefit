@@ -24,12 +24,18 @@ import { AlunoDetalhePage } from './pages/expert/AlunoDetalhePage'
 import { ChatPage } from './pages/expert/ChatPage'
 import { FinanceiroPage } from './pages/expert/FinanceiroPage'
 import { RankingPage } from './pages/expert/RankingPage'
+import { BriefingPage } from './pages/expert/BriefingPage'
+import { GerarIAPage } from './pages/expert/GerarIAPage'
+import { NutricaoPage } from './pages/expert/NutricaoPage'
+import { AvaliacoesPage } from './pages/expert/AvaliacoesPage'
+import { ConfigPage } from './pages/expert/ConfigPage'
 
 // Aluno pages
 import { TreinoDiaPage } from './pages/aluno/TreinoDiaPage'
 import { MeuRankingPage } from './pages/aluno/MeuRankingPage'
 import { ChatAlunoPage } from './pages/aluno/ChatAlunoPage'
 import { PerfilPage } from './pages/aluno/PerfilPage'
+import { NutricaoAlunoPage } from './pages/aluno/NutricaoAlunoPage'
 
 type Page = 'loading' | 'landing' | 'login' | 'register' | 'app'
 
@@ -138,6 +144,7 @@ function AppInner() {
           {appPath === '/aluno/treino' && <TreinoDiaPage />}
           {appPath === '/aluno/ranking' && <MeuRankingPage />}
           {appPath === '/aluno/chat' && <ChatAlunoPage />}
+          {appPath === '/aluno/nutricao' && <NutricaoAlunoPage />}
           {appPath === '/aluno/perfil' && <PerfilPage />}
         </AlunoLayout>
       )
@@ -159,6 +166,11 @@ function AppInner() {
         {chatAlunoMatch && <ChatPage alunoId={chatAlunoMatch[1]} onNavigate={navigate} />}
         {appPath === '/expert/financeiro' && <FinanceiroPage />}
         {appPath === '/expert/ranking' && <RankingPage />}
+        {appPath === '/expert/briefings' && <BriefingPage />}
+        {appPath === '/expert/gerar-ia' && <GerarIAPage />}
+        {appPath === '/expert/nutricao' && <NutricaoPage />}
+        {appPath === '/expert/avaliacoes' && <AvaliacoesPage />}
+        {appPath === '/expert/config' && <ConfigPage />}
       </ExpertLayout>
     )
   }

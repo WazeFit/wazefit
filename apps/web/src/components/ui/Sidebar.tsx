@@ -17,9 +17,14 @@ const NAV = [
   { label: 'Exercícios', icon: '🏋️', href: '/expert/exercicios' },
   { label: 'Fichas', icon: '📋', href: '/expert/fichas' },
   { label: 'Biblioteca', icon: '📚', href: '/expert/biblioteca' },
+  { label: 'Nutrição', icon: '🥗', href: '/expert/nutricao' },
+  { label: 'Avaliações', icon: '📋', href: '/expert/avaliacoes' },
   { label: 'Chat', icon: '💬', href: '/expert/chat' },
   { label: 'Ranking', icon: '🏆', href: '/expert/ranking' },
   { label: 'Financeiro', icon: '💰', href: '/expert/financeiro' },
+  { label: 'Briefing IA', icon: '🤖', href: '/expert/briefings' },
+  { label: 'Gerar com IA', icon: '✨', href: '/expert/gerar-ia' },
+  { label: 'Configurações', icon: '⚙️', href: '/expert/config' },
 ]
 
 export function Sidebar({ user, tenant, currentPath, onNavigate, onLogout }: Props) {

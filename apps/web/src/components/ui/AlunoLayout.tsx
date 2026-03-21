@@ -11,6 +11,7 @@ interface Props {
 
 const NAV = [
   { label: 'Treino', icon: '🏋️', href: '/aluno/treino' },
+  { label: 'Nutrição', icon: '🥗', href: '/aluno/nutricao' },
   { label: 'Ranking', icon: '🏆', href: '/aluno/ranking' },
   { label: 'Chat', icon: '💬', href: '/aluno/chat' },
   { label: 'Perfil', icon: '👤', href: '/aluno/perfil' },
