@@ -198,7 +198,7 @@ execucoesRouter.get('/', zValidator('query', listQuerySchema), async (c) => {
 // GET /ranking — Top 50 alunos por pontos do tenant (standalone)
 // ═══════════════════════════════════════════════════════════════
 const rankingRouter = new Hono<{ Bindings: Env; Variables: AuthVariables }>()
-rankingRouter.use('*', authMiddleware, expertOnly)
+rankingRouter.use('*', authMiddleware) // Alunos e experts podem ver o ranking
 
 rankingRouter.get('/', async (c) => {
   const tenantId = c.get('tenant_id')

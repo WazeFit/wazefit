@@ -18,7 +18,8 @@ import { authMiddleware, expertOnly } from '../middleware/auth'
 
 const calendarioRouter = new Hono<{ Bindings: Env; Variables: AuthVariables }>()
 
-calendarioRouter.use('*', authMiddleware, expertOnly)
+// Auth para todas as rotas; expertOnly aplicado apenas no PUT (salvar)
+calendarioRouter.use('*', authMiddleware)
 
 // ── Schemas de validação ──
 
@@ -34,7 +35,7 @@ const saveCalendarioSchema = z.object({
 // ═══════════════════════════════════════════════════════════════
 // PUT /alunos/:aluno_id/calendario — Salvar calendário semanal
 // ═══════════════════════════════════════════════════════════════
-calendarioRouter.put('/:aluno_id/calendario', zValidator('json', saveCalendarioSchema), async (c) => {
+calendarioRouter.put('/:aluno_id/calendario', expertOnly, zValidator('json', saveCalendarioSchema), async (c) => {
   const { aluno_id } = c.req.param()
   const { calendario } = c.req.valid('json')
   const tenantId = c.get('tenant_id')
