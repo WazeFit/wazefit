@@ -22,9 +22,14 @@ const NAV = [
   { label: 'Chat', icon: '💬', href: '/expert/chat' },
   { label: 'Ranking', icon: '🏆', href: '/expert/ranking' },
   { label: 'Financeiro', icon: '💰', href: '/expert/financeiro' },
+  { label: 'Analytics', icon: '📈', href: '/expert/analytics' },
   { label: 'Briefing IA', icon: '🤖', href: '/expert/briefings' },
   { label: 'Gerar com IA', icon: '✨', href: '/expert/gerar-ia' },
   { label: 'Configurações', icon: '⚙️', href: '/expert/config' },
+]
+
+const ADMIN_NAV = [
+  { label: 'Admin Dashboard', icon: '🔐', href: '/admin/dashboard' },
 ]
 
 export function Sidebar({ user, tenant, currentPath, onNavigate, onLogout }: Props) {
@@ -53,6 +58,24 @@ export function Sidebar({ user, tenant, currentPath, onNavigate, onLogout }: Pro
             </button>
           )
         })}
+
+        {user.role === 'admin' && (
+          <>
+            <div className="my-3 border-t border-gray-800" />
+            {ADMIN_NAV.map((item) => {
+              const active = currentPath === item.href || currentPath.startsWith(item.href + '/')
+              return (
+                <button key={item.href} onClick={() => onNavigate(item.href)}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                    active ? 'bg-green-500/10 text-green-400 font-medium' : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'
+                  }`}>
+                  <span className="text-lg">{item.icon}</span>
+                  {item.label}
+                </button>
+              )
+            })}
+          </>
+        )}
       </nav>
 
       <div className="p-3 border-t border-gray-800">

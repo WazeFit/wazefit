@@ -530,3 +530,149 @@ export const audit_log = sqliteTable(
     index('idx_audit_user').on(t.user_id, t.criado_em),
   ],
 )
+
+// ═══════════════════════════════════════════════════════════════
+// 19. DOMÍNIOS TENANT (Sprint 4)
+// ═══════════════════════════════════════════════════════════════
+export const dominiosTenant = sqliteTable(
+  'dominios_tenant',
+  {
+    id: text('id').primaryKey(),
+    tenant_id: text('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    dominio: text('dominio').notNull(),
+    status: text('status', { enum: ['pending', 'active', 'failed'] })
+      .notNull()
+      .default('pending'),
+    verificado_em: text('verificado_em'),
+    ssl_status: text('ssl_status', { enum: ['pending', 'active', 'failed'] }).default('pending'),
+    criado_em: text('criado_em').notNull().default(now),
+    atualizado_em: text('atualizado_em').notNull().default(now),
+    deletado_em: text('deletado_em'),
+  },
+  (t) => [
+    uniqueIndex('idx_dominios_dominio').on(t.dominio),
+    index('idx_dominios_tenant').on(t.tenant_id, t.status),
+  ],
+)
+
+// ═══════════════════════════════════════════════════════════════
+// 20. PUSH SUBSCRIPTIONS (Sprint 4)
+// ═══════════════════════════════════════════════════════════════
+export const pushSubscriptions = sqliteTable(
+  'push_subscriptions',
+  {
+    id: text('id').primaryKey(),
+    tenant_id: text('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    user_id: text('user_id').notNull(),
+    user_tipo: text('user_tipo', { enum: ['expert', 'aluno'] }).notNull(),
+    endpoint: text('endpoint').notNull(),
+    p256dh: text('p256dh').notNull(),
+    auth: text('auth').notNull(),
+    criado_em: text('criado_em').notNull().default(now),
+  },
+  (t) => [
+    uniqueIndex('idx_push_endpoint').on(t.endpoint),
+    index('idx_push_user').on(t.tenant_id, t.user_id),
+  ],
+)
+
+// ═══════════════════════════════════════════════════════════════
+// 21. NOTIFICAÇÕES (Sprint 4)
+// ═══════════════════════════════════════════════════════════════
+export const notificacoes = sqliteTable(
+  'notificacoes',
+  {
+    id: text('id').primaryKey(),
+    tenant_id: text('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    user_id: text('user_id').notNull(),
+    tipo: text('tipo', { enum: ['treino', 'cobranca', 'mensagem', 'sistema'] }).notNull(),
+    titulo: text('titulo').notNull(),
+    corpo: text('corpo').notNull(),
+    lida: integer('lida', { mode: 'boolean' }).notNull().default(false),
+    criado_em: text('criado_em').notNull().default(now),
+  },
+  (t) => [
+    index('idx_notificacoes_user').on(t.tenant_id, t.user_id, t.lida, t.criado_em),
+    index('idx_notificacoes_tipo').on(t.tenant_id, t.tipo, t.criado_em),
+  ],
+)
+
+// ═══════════════════════════════════════════════════════════════
+// 22. PERIODIZAÇÕES (Sprint 4)
+// ═══════════════════════════════════════════════════════════════
+export const periodizacoes = sqliteTable(
+  'periodizacoes',
+  {
+    id: text('id').primaryKey(),
+    tenant_id: text('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    aluno_id: text('aluno_id')
+      .notNull()
+      .references(() => alunos.id, { onDelete: 'cascade' }),
+    expert_id: text('expert_id')
+      .notNull()
+      .references(() => experts.id, { onDelete: 'cascade' }),
+    tipo: text('tipo', { enum: ['linear', 'ondulada', 'bloco', 'dup'] }).notNull(),
+    duracao_semanas: integer('duracao_semanas').notNull(),
+    fase_atual: integer('fase_atual').notNull().default(1),
+    config_json: text('config_json').notNull().default('{}'),
+    gerado_por_ia: integer('gerado_por_ia', { mode: 'boolean' }).notNull().default(false),
+    criado_em: text('criado_em').notNull().default(now),
+    atualizado_em: text('atualizado_em').notNull().default(now),
+    deletado_em: text('deletado_em'),
+  },
+  (t) => [
+    index('idx_periodizacoes_tenant').on(t.tenant_id),
+    index('idx_periodizacoes_aluno').on(t.aluno_id),
+    index('idx_periodizacoes_expert').on(t.expert_id),
+  ],
+)
+
+// ═══════════════════════════════════════════════════════════════
+// 23. ADMIN LOGS (Sprint 4)
+// ═══════════════════════════════════════════════════════════════
+export const adminLogs = sqliteTable(
+  'admin_logs',
+  {
+    id: text('id').primaryKey(),
+    admin_id: text('admin_id').notNull(),
+    acao: text('acao').notNull(),
+    entidade: text('entidade').notNull(),
+    entidade_id: text('entidade_id').notNull(),
+    detalhes_json: text('detalhes_json'),
+    ip: text('ip'),
+    criado_em: text('criado_em').notNull().default(now),
+  },
+  (t) => [
+    index('idx_admin_logs_admin').on(t.admin_id, t.criado_em),
+    index('idx_admin_logs_entidade').on(t.entidade, t.entidade_id),
+    index('idx_admin_logs_criado').on(t.criado_em),
+  ],
+)
+
+// ═══════════════════════════════════════════════════════════════
+// 24. ANALYTICS EVENTOS (Sprint 4)
+// ═══════════════════════════════════════════════════════════════
+export const analyticsEventos = sqliteTable(
+  'analytics_eventos',
+  {
+    id: text('id').primaryKey(),
+    tenant_id: text('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    tipo: text('tipo').notNull(),
+    dados_json: text('dados_json').notNull().default('{}'),
+    criado_em: text('criado_em').notNull().default(now),
+  },
+  (t) => [
+    index('idx_analytics_tenant').on(t.tenant_id, t.tipo, t.criado_em),
+    index('idx_analytics_criado').on(t.criado_em),
+  ],
+)

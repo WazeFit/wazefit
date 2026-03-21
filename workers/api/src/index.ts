@@ -17,6 +17,11 @@ import { llmRouter } from './routes/llm'
 import { nutricaoRouter } from './routes/nutricao'
 import { avaliacoesRouter } from './routes/avaliacoes'
 import { tenantRouter } from './routes/tenant'
+import { dominiosRouter } from './routes/dominios'
+import { pushRouter } from './routes/push'
+import { periodizacaoRouter } from './routes/periodizacao'
+import { adminRouter } from './routes/admin'
+import { analyticsRouter } from './routes/analytics'
 
 // ── App principal ──
 const app = new Hono<{
@@ -60,6 +65,13 @@ app.route('/api/v1/llm', llmRouter)
 app.route('/api/v1/nutricao', nutricaoRouter)
 app.route('/api/v1/avaliacoes', avaliacoesRouter)
 app.route('/api/v1/tenant', tenantRouter)
+
+// ── Sprint 4 Routes ──
+app.route('/api/v1/tenant/dominios', dominiosRouter)
+app.route('/api/v1/push', pushRouter)
+app.route('/api/v1/periodizacao', periodizacaoRouter)
+app.route('/api/v1/admin', adminRouter)
+app.route('/api/v1/analytics', analyticsRouter)
 
 // ── 404 fallback ──
 app.notFound((c) => {

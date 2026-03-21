@@ -413,6 +413,115 @@ export interface TenantBranding {
   favicon_url: string | null
 }
 
+// ── Types — Sprint 4 ──
+
+export interface DominioTenant {
+  id: string
+  tenant_id: string
+  dominio: string
+  verificado: boolean
+  registro_txt: string
+  created_at: string
+}
+
+export interface DominioInput {
+  dominio: string
+}
+
+export interface PushSubscription {
+  endpoint: string
+  keys: {
+    p256dh: string
+    auth: string
+  }
+}
+
+export interface Notificacao {
+  id: string
+  tenant_id: string
+  aluno_id: string | null
+  tipo: string
+  titulo: string
+  mensagem: string
+  lida: boolean
+  created_at: string
+}
+
+export interface Periodizacao {
+  id: string
+  aluno_id: string
+  aluno_nome?: string
+  nome: string
+  objetivo: string
+  data_inicio: string
+  data_fim: string
+  fases: PeriodizacaoFase[]
+  created_at: string
+}
+
+export interface PeriodizacaoFase {
+  id: string
+  nome: string
+  duracao_semanas: number
+  ordem: number
+  descricao: string | null
+}
+
+export interface PeriodizacaoInput {
+  aluno_id: string
+  nome: string
+  objetivo: string
+  data_inicio: string
+  data_fim: string
+  fases: Omit<PeriodizacaoFase, 'id'>[]
+}
+
+export interface AdminTenant {
+  id: string
+  nome: string
+  email: string
+  plano: string
+  status: string
+  alunos_count: number
+  last_login: string | null
+  created_at: string
+}
+
+export interface AdminStats {
+  total_tenants: number
+  total_alunos: number
+  total_treinos: number
+  revenue: number
+}
+
+export interface AdminLog {
+  id: string
+  tenant_id: string
+  tenant_nome: string
+  user_id: string
+  user_nome: string
+  action: string
+  timestamp: string
+}
+
+export interface AnalyticsDashboard {
+  alunos_ativos: number
+  treinos_semana: number
+  taxa_aderencia: number
+  receita_mes: number
+  treinos_por_dia: { data: string; count: number }[]
+  top_ranking: { aluno_nome: string; treinos: number }[]
+}
+
+export interface AlunoAnalytics {
+  aluno_id: string
+  aluno_nome: string
+  total_treinos: number
+  frequencia_media: number
+  ultima_execucao: string | null
+  evolucao_peso: { data: string; peso: number }[]
+}
+
 // ── API Client ──
 
 export const api = {
@@ -620,5 +729,69 @@ export const api = {
       request<TenantConfig>('PUT', '/api/v1/tenant/config', data),
     branding: () =>
       request<TenantBranding>('GET', '/api/v1/tenant/branding'),
+  },
+
+  // ── Sprint 4 ──
+
+  dominios: {
+    list: () =>
+      requestList<DominioTenant>('GET', '/api/v1/dominios'),
+    create: (data: DominioInput) =>
+      request<DominioTenant>('POST', '/api/v1/dominios', data),
+    delete: (id: string) =>
+      request<{ ok: boolean }>('DELETE', `/api/v1/dominios/${id}`),
+    verificar: (id: string) =>
+      request<{ verificado: boolean }>('POST', `/api/v1/dominios/${id}/verificar`),
+  },
+
+  push: {
+    subscribe: (subscription: PushSubscription) =>
+      request<{ ok: boolean }>('POST', '/api/v1/push/subscribe', subscription),
+    unsubscribe: (endpoint: string) =>
+      request<{ ok: boolean }>('POST', '/api/v1/push/unsubscribe', { endpoint }),
+  },
+
+  notificacoes: {
+    list: () =>
+      requestList<Notificacao>('GET', '/api/v1/notificacoes'),
+    marcarLida: (id: string) =>
+      request<{ ok: boolean }>('PUT', `/api/v1/notificacoes/${id}/lida`),
+    marcarTodasLidas: () =>
+      request<{ ok: boolean }>('PUT', '/api/v1/notificacoes/marcar-todas-lidas'),
+  },
+
+  periodizacao: {
+    list: (alunoId?: string) =>
+      requestList<Periodizacao>('GET', `/api/v1/periodizacao${alunoId ? `?aluno_id=${alunoId}` : ''}`),
+    get: (id: string) =>
+      request<Periodizacao>('GET', `/api/v1/periodizacao/${id}`),
+    create: (data: PeriodizacaoInput) =>
+      request<Periodizacao>('POST', '/api/v1/periodizacao', data),
+    delete: (id: string) =>
+      request<{ ok: boolean }>('DELETE', `/api/v1/periodizacao/${id}`),
+    gerarIA: (alunoId: string, objetivo: string, duracao_semanas: number) =>
+      request<{ job_id: string }>('POST', '/api/v1/periodizacao/gerar-ia', { aluno_id: alunoId, objetivo, duracao_semanas }),
+  },
+
+  admin: {
+    tenants: (busca?: string) =>
+      requestList<AdminTenant>('GET', `/api/v1/admin/tenants${busca ? `?busca=${encodeURIComponent(busca)}` : ''}`),
+    tenantDetail: (id: string) =>
+      request<AdminTenant>('GET', `/api/v1/admin/tenants/${id}`),
+    updateTenant: (id: string, data: Partial<{ plano: string; status: string }>) =>
+      request<AdminTenant>('PUT', `/api/v1/admin/tenants/${id}`, data),
+    stats: () =>
+      request<AdminStats>('GET', '/api/v1/admin/stats'),
+    logs: (limit = 50) =>
+      requestList<AdminLog>('GET', `/api/v1/admin/logs?limit=${limit}`),
+  },
+
+  analytics: {
+    dashboard: () =>
+      request<AnalyticsDashboard>('GET', '/api/v1/analytics/dashboard'),
+    alunoAnalytics: (alunoId: string) =>
+      request<AlunoAnalytics>('GET', `/api/v1/analytics/alunos/${alunoId}`),
+    trackEvento: (evento: string, metadata?: Record<string, unknown>) =>
+      request<{ ok: boolean }>('POST', '/api/v1/analytics/track', { evento, metadata }),
   },
 }

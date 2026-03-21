@@ -29,6 +29,10 @@ import { GerarIAPage } from './pages/expert/GerarIAPage'
 import { NutricaoPage } from './pages/expert/NutricaoPage'
 import { AvaliacoesPage } from './pages/expert/AvaliacoesPage'
 import { ConfigPage } from './pages/expert/ConfigPage'
+import AnalyticsPage from './pages/expert/AnalyticsPage'
+
+// Admin pages
+import AdminDashboardPage from './pages/admin/AdminDashboardPage'
 
 // Aluno pages
 import { TreinoDiaPage } from './pages/aluno/TreinoDiaPage'
@@ -170,7 +174,9 @@ function AppInner() {
         {appPath === '/expert/gerar-ia' && <GerarIAPage />}
         {appPath === '/expert/nutricao' && <NutricaoPage />}
         {appPath === '/expert/avaliacoes' && <AvaliacoesPage />}
+        {appPath === '/expert/analytics' && <AnalyticsPage />}
         {appPath === '/expert/config' && <ConfigPage />}
+        {appPath === '/admin/dashboard' && user.role === 'admin' && <AdminDashboardPage />}
       </ExpertLayout>
     )
   }
