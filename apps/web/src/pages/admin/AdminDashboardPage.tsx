@@ -226,7 +226,7 @@ export default function AdminDashboardPage() {
       </Card>
 
       {/* Edit Modal */}
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)}>
+      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)}>
         <div className="space-y-4">
           <h2 className="text-xl font-bold text-white">{t('admin.tenants.edit')}</h2>
           {selectedTenant && (

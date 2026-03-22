@@ -195,7 +195,7 @@ function CriarAvaliacaoModal({ alunos, onClose, onCreated }: { alunos: Aluno[]; 
   }
 
   return (
-    <Modal open onClose={onClose} title="Nova Avaliação" size="xl">
+    <Modal isOpen onClose={onClose} title="Nova Avaliação" size="xl">
       <div className="space-y-4">
         {error && <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-sm text-red-400">{error}</div>}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -343,7 +343,7 @@ function VisualizarAvaliacaoModal({ avaliacao, onClose }: { avaliacao: Avaliacao
   }
 
   return (
-    <Modal open onClose={onClose} title={info.icon + ' ' + info.label} size="lg">
+    <Modal isOpen onClose={onClose} title={info.icon + ' ' + info.label} size="lg">
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>

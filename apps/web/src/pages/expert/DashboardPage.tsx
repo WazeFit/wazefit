@@ -1,9 +1,13 @@
 /**
- * Dashboard do Expert — com dados reais da API.
+ * Dashboard do Expert — com design system moderno.
  */
 import { useState, useEffect } from 'react'
 import { api } from '../../lib/api'
 import type { User, Tenant } from '../../stores/auth'
+import { PageHeader } from '../../components/ui/PageHeader'
+import { Card } from '../../components/ui/Card'
+import { Button } from '../../components/ui/Button'
+import { Users, Dumbbell, MessageSquare, DollarSign, TrendingUp, Calendar } from 'lucide-react'
 
 interface Props {
   user: User
@@ -46,36 +50,102 @@ export function DashboardPage({ user, tenant }: Props) {
   }, [])
 
   const cards = [
-    { icon: '👥', label: 'Alunos Ativos', value: loading ? '...' : String(data?.totalAlunos ?? 0), color: 'text-brand-400' },
-    { icon: '🏋️', label: 'Treinos Hoje', value: loading ? '...' : String(data?.treinosHoje ?? 0), color: 'text-blue-400' },
-    { icon: '💬', label: 'Mensagens', value: loading ? '...' : String(data?.mensagensNaoLidas ?? 0), color: 'text-purple-400' },
-    { icon: '💰', label: 'Receita Mensal', value: loading ? '...' : `R$ ${(data?.receitaMes ?? 0).toFixed(2)}`, color: 'text-green-400' },
+    { 
+      icon: Users, 
+      label: 'Alunos Ativos', 
+      value: loading ? '...' : String(data?.totalAlunos ?? 0), 
+      bgColor: 'bg-brand-500/10',
+      iconColor: 'text-brand-400',
+    },
+    { 
+      icon: Dumbbell, 
+      label: 'Treinos Hoje', 
+      value: loading ? '...' : String(data?.treinosHoje ?? 0), 
+      bgColor: 'bg-blue-500/10',
+      iconColor: 'text-blue-400',
+    },
+    { 
+      icon: MessageSquare, 
+      label: 'Mensagens', 
+      value: loading ? '...' : String(data?.mensagensNaoLidas ?? 0), 
+      bgColor: 'bg-purple-500/10',
+      iconColor: 'text-purple-400',
+    },
+    { 
+      icon: DollarSign, 
+      label: 'Receita Mensal', 
+      value: loading ? '...' : `R$ ${(data?.receitaMes ?? 0).toFixed(2)}`, 
+      bgColor: 'bg-green-500/10',
+      iconColor: 'text-green-400',
+    },
   ]
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-1">Olá, {user.nome.split(' ')[0]} 👋</h1>
-      <p className="text-gray-400 mb-8">Bem-vindo ao painel do {tenant.nome || 'WazeFit'}</p>
+      <PageHeader
+        title={`Olá, ${user.nome.split(' ')[0]} 👋`}
+        description={`Bem-vindo ao painel do ${tenant.nome || 'WazeFit'}`}
+      />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {cards.map((card) => (
-          <div key={card.label} className="bg-gray-800/30 border border-gray-800 rounded-xl p-5 hover:border-gray-700 transition-colors">
-            <div className="flex items-center gap-3 mb-3">
-              <span className="text-2xl">{card.icon}</span>
-            </div>
-            <p className={`text-2xl font-bold ${card.color}`}>{card.value}</p>
-            <p className="text-sm text-gray-400 mt-1">{card.label}</p>
-          </div>
-        ))}
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {cards.map((card) => {
+          const Icon = card.icon
+          return (
+            <Card key={card.label} className="p-6 hover:border-dark-700 transition-all">
+              <div className="flex items-center justify-between mb-4">
+                <div className={`w-12 h-12 ${card.bgColor} rounded-xl flex items-center justify-center`}>
+                  <Icon className={`w-6 h-6 ${card.iconColor}`} />
+                </div>
+              </div>
+              <p className={`text-3xl font-bold ${card.iconColor} mb-1`}>{card.value}</p>
+              <p className="text-sm text-gray-400">{card.label}</p>
+            </Card>
+          )
+        })}
       </div>
 
+      {/* Empty State */}
       {!loading && data?.totalAlunos === 0 && (
-        <div className="mt-8 bg-gray-800/20 border border-gray-800 rounded-xl p-8 text-center">
-          <span className="text-4xl mb-4 block">🚀</span>
-          <h2 className="text-lg font-semibold mb-2">Comece agora!</h2>
-          <p className="text-gray-400 text-sm max-w-md mx-auto">
-            Cadastre seu primeiro aluno, crie exercícios e monte fichas de treino personalizadas.
-          </p>
+        <Card className="p-12 text-center">
+          <div className="max-w-md mx-auto">
+            <div className="w-16 h-16 bg-brand-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <TrendingUp className="w-8 h-8 text-brand-400" />
+            </div>
+            <h2 className="text-xl font-semibold text-white mb-2">Comece agora!</h2>
+            <p className="text-gray-400 mb-6">
+              Cadastre seu primeiro aluno, crie exercícios e monte fichas de treino personalizadas.
+            </p>
+            <div className="flex gap-3 justify-center">
+              <Button variant="primary">Adicionar Aluno</Button>
+              <Button variant="outline">Ver Tutorial</Button>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Quick Actions */}
+      {!loading && data && data.totalAlunos > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-brand-400" />
+              Atividades Recentes
+            </h3>
+            <p className="text-sm text-gray-400">
+              Nenhuma atividade recente para exibir.
+            </p>
+          </Card>
+
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-brand-400" />
+              Metas do Mês
+            </h3>
+            <p className="text-sm text-gray-400">
+              Configure suas metas mensais.
+            </p>
+          </Card>
         </div>
       )}
     </div>

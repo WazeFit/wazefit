@@ -17,6 +17,7 @@ import { AlunoLayout } from './components/ui/AlunoLayout'
 
 // Expert pages
 import { DashboardPage } from './pages/expert/DashboardPage'
+import { AlunosPage } from './pages/expert/AlunosPage'
 import { ExerciciosPage } from './pages/expert/ExerciciosPage'
 import { FichasPage } from './pages/expert/FichasPage'
 import { BibliotecaPage } from './pages/expert/BibliotecaPage'
@@ -126,9 +127,9 @@ function AppInner() {
   // ── Render ──
   if (page === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-950 text-white">
+      <div className="min-h-screen flex items-center justify-center bg-dark-950 text-white">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
+          <div className="w-12 h-12 border-3 border-brand-500 border-t-transparent rounded-full animate-spin" />
           <p className="text-gray-400 text-sm">Carregando...</p>
         </div>
       </div>
@@ -161,7 +162,7 @@ function AppInner() {
     return (
       <ExpertLayout user={user} tenant={tenant} currentPath={appPath} onNavigate={navigate} onLogout={handleLogout}>
         {appPath === '/dashboard' && <DashboardPage user={user} tenant={tenant} />}
-        {(appPath === '/alunos') && <Placeholder title="Alunos" icon="👥" />}
+        {appPath === '/alunos' && <AlunosPage />}
         {alunoDetalheMatch && <AlunoDetalhePage alunoId={alunoDetalheMatch[1]!} />}
         {appPath === '/expert/exercicios' && <ExerciciosPage />}
         {appPath === '/expert/fichas' && <FichasPage />}
@@ -193,44 +194,33 @@ export function App() {
   )
 }
 
-// ── Placeholder (para Alunos lista — Sprint 1) ──
-function Placeholder({ title, icon }: { title: string; icon: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-      <span className="text-6xl mb-4">{icon}</span>
-      <h1 className="text-2xl font-bold mb-2">{title}</h1>
-      <p className="text-gray-400">Em desenvolvimento</p>
-    </div>
-  )
-}
-
 // ── Landing ──
 function Landing({ onNavigate }: { onNavigate: (p: string) => void }) {
   return (
-    <div className="min-h-screen flex flex-col bg-gray-950 text-white">
-      <header className="fixed top-0 w-full z-50 bg-gray-950/80 backdrop-blur-md border-b border-gray-800/50">
+    <div className="min-h-screen flex flex-col bg-dark-950 text-white">
+      <header className="fixed top-0 w-full z-50 bg-dark-950/80 backdrop-blur-md border-b border-dark-800/50">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center font-bold text-sm">W</div>
-            <span className="text-xl font-bold">Waze<span className="text-green-400">Fit</span></span>
+            <div className="w-8 h-8 bg-gradient-to-br from-brand-500 to-brand-600 rounded-lg flex items-center justify-center font-bold text-sm shadow-glow-sm">W</div>
+            <span className="text-xl font-bold">Waze<span className="text-brand-400">Fit</span></span>
           </div>
           <div className="flex items-center gap-3">
             <button onClick={() => onNavigate('/login')} className="text-sm text-gray-400 hover:text-white transition-colors">Entrar</button>
-            <button onClick={() => onNavigate('/register')} className="text-sm bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors">Criar conta</button>
+            <button onClick={() => onNavigate('/register')} className="text-sm bg-brand-500 hover:bg-brand-600 text-white px-4 py-2 rounded-lg transition-colors shadow-glow-sm">Criar conta</button>
           </div>
         </div>
       </header>
 
       <main className="flex-1 flex items-center justify-center px-6 pt-20">
         <div className="max-w-3xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 bg-green-500/10 border border-green-500/20 rounded-full px-4 py-1.5 mb-8">
-            <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-            <span className="text-green-400 text-sm font-medium">Plataforma fitness completa</span>
+          <div className="inline-flex items-center gap-2 bg-brand-500/10 border border-brand-500/20 rounded-full px-4 py-1.5 mb-8">
+            <span className="w-2 h-2 bg-brand-400 rounded-full animate-pulse" />
+            <span className="text-brand-400 text-sm font-medium">Plataforma fitness completa</span>
           </div>
 
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold leading-tight mb-6">
             Sua plataforma fitness{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-300">completa</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-emerald-300">completa</span>
           </h1>
 
           <p className="text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
@@ -238,13 +228,13 @@ function Landing({ onNavigate }: { onNavigate: (p: string) => void }) {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <button onClick={() => onNavigate('/register')} className="px-8 py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-all hover:shadow-lg hover:shadow-green-500/25">Começar grátis</button>
-            <button onClick={() => onNavigate('/login')} className="px-8 py-3 bg-gray-800 hover:bg-gray-700 text-white font-semibold rounded-xl transition-all">Já tenho conta</button>
+            <button onClick={() => onNavigate('/register')} className="px-8 py-3 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-xl transition-all hover:shadow-glow active:scale-[0.98]">Começar grátis</button>
+            <button onClick={() => onNavigate('/login')} className="px-8 py-3 bg-dark-800 hover:bg-dark-700 text-white font-semibold rounded-xl transition-all border border-dark-700">Já tenho conta</button>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-16 max-w-2xl mx-auto">
             {[{ icon: '🏋️', label: 'Treinos' }, { icon: '📊', label: 'Evolução' }, { icon: '👥', label: 'Alunos' }, { icon: '💰', label: 'Financeiro' }].map(f => (
-              <div key={f.label} className="bg-gray-800/30 border border-gray-800 rounded-xl p-4 hover:border-green-500/30 transition-colors">
+              <div key={f.label} className="bg-dark-800/30 border border-dark-800 rounded-xl p-4 hover:border-brand-500/30 transition-colors">
                 <div className="text-2xl mb-2">{f.icon}</div>
                 <div className="text-sm text-gray-400">{f.label}</div>
               </div>

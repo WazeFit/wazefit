@@ -182,7 +182,7 @@ export function FichasPage() {
         </div>
       )}
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Editar Ficha' : 'Nova Ficha'} size="xl">
+      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Editar Ficha' : 'Nova Ficha'} size="xl">
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input label="Nome" value={nome} onChange={(e) => setNome(e.target.value)} error={errors['nome']} placeholder="Ex: Treino A - Peito" />
@@ -228,7 +228,7 @@ export function FichasPage() {
         </div>
       </Modal>
 
-      <Modal open={!!atribuirModal} onClose={() => setAtribuirModal(null)} title="Atribuir Ficha ao Aluno">
+      <Modal isOpen={!!atribuirModal} onClose={() => setAtribuirModal(null)} title="Atribuir Ficha ao Aluno">
         <div className="space-y-4">
           <Select label="Aluno" options={alunos.map((a) => ({ value: a.id, label: a.nome }))} value={alunoSel} onChange={(e) => setAlunoSel(e.target.value)} placeholder="Selecione um aluno..." />
           <div className="flex justify-end gap-2 pt-2">

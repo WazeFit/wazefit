@@ -167,7 +167,7 @@ export function FinanceiroPage() {
         </div>
       )}
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Nova Cobrança">
+      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Nova Cobrança">
         <div className="space-y-4">
           <Select label="Aluno" options={alunos.map((a) => ({ value: a.id, label: a.nome }))} value={alunoId} onChange={(e) => setAlunoId(e.target.value)} placeholder="Selecione..." error={errors['aluno']} />
           <Input label="Valor (R$)" type="number" step="0.01" value={valor} onChange={(e) => setValor(e.target.value)} error={errors['valor']} placeholder="150.00" />

@@ -159,7 +159,7 @@ function CriarPlanoModal({ alunos, onClose, onCreated }: {
   }
 
   return (
-    <Modal open onClose={onClose} title="Novo Plano Nutricional" size="lg">
+    <Modal isOpen onClose={onClose} title="Novo Plano Nutricional" size="lg">
       <div className="space-y-4">
         {error && <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-sm text-red-400">{error}</div>}
         <Select label="Aluno" placeholder="Selecione..." options={alunos.map(a => ({ value: a.id, label: a.nome }))}
@@ -375,7 +375,7 @@ function AddRefeicaoModal({ planoId, onClose, onAdded }: { planoId: string; onCl
   }
 
   return (
-    <Modal open onClose={onClose} title="Adicionar Refeição">
+    <Modal isOpen onClose={onClose} title="Adicionar Refeição">
       <div className="space-y-4">
         {error && <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-sm text-red-400">{error}</div>}
         <Input label="Nome" placeholder="Ex: Café da manhã" value={nome} onChange={e => setNome(e.target.value)} />
@@ -419,7 +419,7 @@ function AddAlimentoModal({ planoId, refeicaoId, onClose, onAdded }: {
   }
 
   return (
-    <Modal open onClose={onClose} title="Adicionar Alimento" size="lg">
+    <Modal isOpen onClose={onClose} title="Adicionar Alimento" size="lg">
       <div className="space-y-4">
         {error && <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-sm text-red-400">{error}</div>}
         <Input label="Nome" placeholder="Ex: Frango grelhado" value={form.nome} onChange={e => update('nome', e.target.value)} />

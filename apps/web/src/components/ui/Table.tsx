@@ -1,57 +1,62 @@
 import type { ReactNode } from 'react'
 
-interface Column<T> {
-  key: string
-  label: string
-  render?: (row: T) => ReactNode
+interface TableProps {
+  children: ReactNode
   className?: string
 }
 
-interface Props<T> {
-  columns: Column<T>[]
-  data: T[]
-  keyExtractor: (row: T) => string
-  emptyMessage?: string
-  onRowClick?: (row: T) => void
-}
-
-export function Table<T>({ columns, data, keyExtractor, emptyMessage = 'Nenhum item encontrado', onRowClick }: Props<T>) {
-  if (data.length === 0) {
-    return (
-      <div className="text-center py-12 text-gray-500">
-        <p>{emptyMessage}</p>
-      </div>
-    )
-  }
-
+export function Table({ children, className = '' }: TableProps) {
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-gray-800">
-            {columns.map((col) => (
-              <th key={col.key} className={`text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider ${col.className ?? ''}`}>
-                {col.label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((row) => (
-            <tr
-              key={keyExtractor(row)}
-              onClick={() => onRowClick?.(row)}
-              className={`border-b border-gray-800/50 ${onRowClick ? 'cursor-pointer hover:bg-gray-800/30' : ''}`}
-            >
-              {columns.map((col) => (
-                <td key={col.key} className={`px-4 py-3 text-gray-300 ${col.className ?? ''}`}>
-                  {col.render ? col.render(row) : String((row as Record<string, unknown>)[col.key] ?? '')}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
+    <div className="overflow-x-auto rounded-lg border border-dark-800">
+      <table className={`w-full ${className}`}>
+        {children}
       </table>
     </div>
+  )
+}
+
+export function TableHeader({ children, className = '' }: TableProps) {
+  return (
+    <thead className={`bg-dark-900/50 border-b border-dark-800 ${className}`}>
+      {children}
+    </thead>
+  )
+}
+
+export function TableBody({ children, className = '' }: TableProps) {
+  return (
+    <tbody className={`divide-y divide-dark-800 ${className}`}>
+      {children}
+    </tbody>
+  )
+}
+
+export function TableRow({ children, className = '', onClick }: TableProps & { onClick?: () => void }) {
+  return (
+    <tr 
+      className={`
+        ${onClick ? 'cursor-pointer hover:bg-dark-800/50 transition-colors' : ''}
+        ${className}
+      `}
+      onClick={onClick}
+    >
+      {children}
+    </tr>
+  )
+}
+
+export function TableHead({ children, className = '' }: TableProps) {
+  return (
+    <th className={`px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider ${className}`}>
+      {children}
+    </th>
+  )
+}
+
+export function TableCell({ children, className = '' }: TableProps) {
+  return (
+    <td className={`px-6 py-4 text-sm text-gray-300 ${className}`}>
+      {children}
+    </td>
   )
 }

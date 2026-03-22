@@ -162,7 +162,7 @@ export function ExerciciosPage() {
         </div>
       )}
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Editar Exercício' : 'Novo Exercício'}>
+      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Editar Exercício' : 'Novo Exercício'}>
         <div className="space-y-4">
           <Input label="Nome" value={nome} onChange={(e) => setNome(e.target.value)} error={errors['nome']} placeholder="Ex: Supino reto" />
           <Select label="Grupo Muscular" options={grupoOptions} value={grupo} onChange={(e) => setGrupo(e.target.value)} error={errors['grupo']} placeholder="Selecione..." />

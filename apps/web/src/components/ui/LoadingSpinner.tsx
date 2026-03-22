@@ -1,26 +1,27 @@
+import { Loader2 } from 'lucide-react'
+
 interface Props {
   size?: 'sm' | 'md' | 'lg'
   className?: string
+  text?: string
 }
 
 const sizeClasses = {
-  sm: 'w-4 h-4 border-2',
-  md: 'w-8 h-8 border-2',
-  lg: 'w-12 h-12 border-3',
+  sm: 'w-4 h-4',
+  md: 'w-8 h-8',
+  lg: 'w-12 h-12',
 }
 
-export function LoadingSpinner({ size = 'md', className = '' }: Props) {
+export function LoadingSpinner({ size = 'md', className = '', text }: Props) {
   return (
-    <div className={`flex items-center justify-center ${className}`}>
-      <div className={`${sizeClasses[size]} border-green-500 border-t-transparent rounded-full animate-spin`} />
+    <div className={`flex flex-col items-center justify-center gap-3 ${className}`}>
+      <Loader2 className={`${sizeClasses[size]} text-brand-500 animate-spin`} />
+      {text && <p className="text-sm text-gray-400">{text}</p>}
     </div>
   )
 }
 
-export function PageLoader() {
-  return (
-    <div className="flex items-center justify-center min-h-[40vh]">
-      <LoadingSpinner size="lg" />
-    </div>
-  )
+// Alias para compatibilidade
+export function PageLoader({ text }: { text?: string }) {
+  return <LoadingSpinner size="lg" text={text} className="py-12" />
 }
