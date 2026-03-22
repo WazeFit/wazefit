@@ -2,7 +2,7 @@
  * Página de Login.
  */
 import { useState } from 'react'
-import { login, ApiError } from '../../stores/auth'
+import { login } from '../../stores/auth'
 import type { User, Tenant } from '../../stores/auth'
 
 interface Props {
@@ -25,8 +25,8 @@ export function LoginPage({ onSuccess, onNavigate }: Props) {
       const result = await login(email, senha)
       onSuccess(result.user, result.tenant)
     } catch (err) {
-      if (err instanceof ApiError) {
-        setErro(err.body.error)
+      if (err instanceof Error) {
+        setErro(err.message)
       } else {
         setErro('Erro ao fazer login. Tente novamente.')
       }

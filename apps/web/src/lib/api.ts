@@ -7,14 +7,37 @@ const BASE = 'https://api.wazefit.com'
 
 export class ApiError extends Error {
   status: number
-  body: { error: string; code: number }
 
-  constructor(status: number, body: { error: string; code: number }) {
-    super(body.error)
+  constructor(status: number, data: unknown) {
+    super(extractErrorMessage(data))
     this.name = 'ApiError'
     this.status = status
-    this.body = body
   }
+}
+
+/**
+ * Extrair mensagem de erro da resposta da API.
+ * Suporta:
+ * 1. { error: "mensagem", code: 400 }
+ * 2. { success: false, error: { issues: [{ message }], name: "ZodError" } }
+ */
+function extractErrorMessage(data: unknown): string {
+  if (!data || typeof data !== 'object') return 'Erro desconhecido'
+  const d = data as Record<string, unknown>
+
+  // Formato 1: { error: "string" }
+  if (typeof d.error === 'string') return d.error
+
+  // Formato 2: ZodError
+  if (d.error && typeof d.error === 'object') {
+    const err = d.error as Record<string, unknown>
+    if (Array.isArray(err.issues) && err.issues.length > 0) {
+      const issue = err.issues[0] as Record<string, unknown>
+      return (issue.message as string) || 'Dados inválidos'
+    }
+  }
+
+  return 'Erro desconhecido'
 }
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
@@ -34,11 +57,11 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   })
 
   if (!res.ok) {
-    let data: { error: string; code: number }
+    let data: unknown
     try {
       data = await res.json()
     } catch {
-      data = { error: `HTTP ${res.status}`, code: res.status }
+      data = { error: `HTTP ${res.status}` }
     }
     throw new ApiError(res.status, data)
   }
