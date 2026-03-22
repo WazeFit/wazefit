@@ -73,7 +73,7 @@ export default function AnalyticsPage() {
     );
   }
 
-  const maxTreinos = Math.max(...(dashboard?.treinos_por_dia.map((d) => d.count) || [1]));
+  const maxTreinos = Math.max(...(dashboard?.treinos_por_dia?.map((d) => d.count) || [1]));
 
   return (
     <div className="space-y-6">
@@ -120,7 +120,7 @@ export default function AnalyticsPage() {
         <div className="p-6 space-y-4">
           <h2 className="text-xl font-bold text-white">{t('analytics.treinosPorDia')}</h2>
           <div className="flex items-end gap-1 h-64">
-            {dashboard?.treinos_por_dia.map((item, idx) => {
+            {dashboard?.treinos_por_dia?.map((item, idx) => {
               const height = maxTreinos > 0 ? (item.count / maxTreinos) * 100 : 0;
               return (
                 <div key={idx} className="flex-1 flex flex-col items-center gap-2">
@@ -150,7 +150,7 @@ export default function AnalyticsPage() {
           <div className="p-6 space-y-4">
             <h2 className="text-xl font-bold text-white">{t('analytics.topRanking')}</h2>
             <div className="space-y-2">
-              {dashboard?.top_ranking.map((item, idx) => (
+              {dashboard?.top_ranking?.map((item, idx) => (
                 <div
                   key={idx}
                   className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg"
@@ -212,7 +212,7 @@ export default function AnalyticsPage() {
                   <div className="p-3 bg-gray-800/50 rounded-lg">
                     <p className="text-sm text-gray-400 mb-2">Evolução de Peso</p>
                     <div className="space-y-1">
-                      {alunoStats.evolucao_peso.slice(-5).map((item, idx) => (
+                      {alunoStats.evolucao_peso?.slice(-5).map((item, idx) => (
                         <div key={idx} className="flex justify-between text-sm">
                           <span className="text-gray-400">{formatDate(item.data)}</span>
                           <span className="text-white font-medium">{item.peso} kg</span>

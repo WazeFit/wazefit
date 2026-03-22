@@ -107,13 +107,13 @@ export function FinanceiroPage() {
           <Card>
             <CardBody>
               <p className="text-xs text-gray-500 mb-1">Receita do Mês</p>
-              <p className="text-2xl font-bold text-green-400">R$ {resumo.receita_mes.toFixed(2)}</p>
+              <p className="text-2xl font-bold text-green-400">R$ {(resumo.receita_mes ?? 0).toFixed(2)}</p>
             </CardBody>
           </Card>
           <Card>
             <CardBody>
               <p className="text-xs text-gray-500 mb-1">Mês Anterior</p>
-              <p className="text-2xl font-bold text-white">R$ {resumo.receita_mes_anterior.toFixed(2)}</p>
+              <p className="text-2xl font-bold text-white">R$ {(resumo.receita_mes_anterior ?? 0).toFixed(2)}</p>
             </CardBody>
           </Card>
           <Card>
