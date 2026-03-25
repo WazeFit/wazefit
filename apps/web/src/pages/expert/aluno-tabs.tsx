@@ -13,11 +13,14 @@ import {
   X,
   Dumbbell,
   Apple,
-  MessageSquare,
-  FileText,
   DollarSign,
-  ExternalLink,
+  ClipboardList,
+  Camera,
+  Plus,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react'
+import { Badge } from '../../components/ui/Badge'
 
 // Tab 1: Detalhes
 export function DetalhesTab({ aluno, onUpdate }: { aluno: Aluno; onUpdate: () => void }) {
@@ -357,55 +360,155 @@ export function EvolucaoTab({ alunoId }: { alunoId: string }) {
   )
 }
 
-// Tab 8: WhatsApp
-export function WhatsAppTab({ aluno }: { aluno: Aluno }) {
-  const cleanPhone = (phone: string | null) => {
-    if (!phone) return null
-    return phone.replace(/\D/g, '')
+// Tab 5: Formulários (check-in mensal do aluno)
+interface FormularioEntry {
+  id: string
+  mesAno: string
+  status: 'preenchido' | 'pendente'
+  dataPreenchimento: string | null
+  peso: number | null
+  gorduraCorporal: number | null
+  observacoes: string | null
+  fotos: { url: string; tipo: 'frente' | 'lado' | 'costas' }[]
+}
+
+export function FormulariosTab({ alunoId: _alunoId }: { alunoId: string }) {
+  const [formularios] = useState<FormularioEntry[]>([])
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+
+  // TODO: load from API when backend is ready
+  // useEffect(() => { api.formularios.list(_alunoId).then(setFormularios) }, [_alunoId])
+
+  if (formularios.length === 0) {
+    return (
+      <Card className="p-6">
+        <EmptyState
+          icon={<ClipboardList className="w-12 h-12" />}
+          title="Nenhum formulário preenchido"
+          description="Os formulários mensais do aluno aparecerão aqui conforme forem preenchidos. Cada formulário inclui peso, medidas, fotos e observações."
+          action={{
+            label: 'Criar Formulário',
+            onClick: () => {
+              // TODO: open modal to create form
+            },
+          }}
+        />
+      </Card>
+    )
   }
 
-  const whatsappUrl = aluno.telefone ? `https://wa.me/${cleanPhone(aluno.telefone)}` : null
-
   return (
-    <Card className="p-6">
-      {whatsappUrl ? (
-        <div className="text-center space-y-4">
-          <MessageSquare className="w-16 h-16 mx-auto text-green-500" />
-          <h3 className="text-lg font-semibold text-white">Conversar no WhatsApp</h3>
-          <p className="text-gray-400">{aluno.telefone}</p>
-          <Button
-            onClick={() => window.open(whatsappUrl, '_blank')}
-            className="bg-green-500 hover:bg-green-600"
-          >
-            <ExternalLink className="w-4 h-4" />
-            Abrir WhatsApp
-          </Button>
-        </div>
-      ) : (
-        <EmptyState
-          icon={<MessageSquare />}
-          title="Sem telefone cadastrado"
-          description="Adicione um telefone nas informações do aluno para habilitar o WhatsApp"
-        />
-      )}
-    </Card>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-white">Formulários Mensais</h3>
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={() => {
+            // TODO: open modal to create form
+          }}
+        >
+          <Plus className="w-4 h-4" />
+          Novo Formulário
+        </Button>
+      </div>
+
+      {formularios.map((form) => {
+        const isExpanded = expandedId === form.id
+        return (
+          <Card key={form.id} className="overflow-hidden">
+            {/* Header - clickable */}
+            <button
+              type="button"
+              className="w-full p-4 flex items-center justify-between hover:bg-dark-800/50 transition-colors"
+              onClick={() => setExpandedId(isExpanded ? null : form.id)}
+            >
+              <div className="flex items-center gap-3">
+                <ClipboardList className="w-5 h-5 text-brand-400" />
+                <div className="text-left">
+                  <div className="text-white font-medium">{form.mesAno}</div>
+                  {form.dataPreenchimento && (
+                    <div className="text-xs text-gray-500">
+                      Preenchido em {new Date(form.dataPreenchimento).toLocaleDateString('pt-BR')}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Badge variant={form.status === 'preenchido' ? 'success' : 'warning'}>
+                  {form.status === 'preenchido' ? 'Preenchido' : 'Pendente'}
+                </Badge>
+                {isExpanded ? (
+                  <ChevronUp className="w-4 h-4 text-gray-400" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-gray-400" />
+                )}
+              </div>
+            </button>
+
+            {/* Expanded content */}
+            {isExpanded && (
+              <div className="px-4 pb-4 border-t border-dark-700 pt-4 space-y-4">
+                {/* Measurements */}
+                <div className="grid grid-cols-2 gap-4">
+                  {form.peso != null && (
+                    <div className="bg-dark-800 rounded-lg p-3">
+                      <div className="text-xs text-gray-500 mb-1">Peso</div>
+                      <div className="text-white font-semibold">{form.peso} kg</div>
+                    </div>
+                  )}
+                  {form.gorduraCorporal != null && (
+                    <div className="bg-dark-800 rounded-lg p-3">
+                      <div className="text-xs text-gray-500 mb-1">% Gordura</div>
+                      <div className="text-white font-semibold">{form.gorduraCorporal}%</div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Photos */}
+                {form.fotos.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Camera className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm text-gray-400">Fotos</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      {form.fotos.map((foto, idx) => (
+                        <div
+                          key={idx}
+                          className="aspect-square bg-dark-800 rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-brand-500 transition-all"
+                        >
+                          <img
+                            src={foto.url}
+                            alt={`Foto ${foto.tipo}`}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="text-xs text-center text-gray-500 mt-1 capitalize">
+                            {foto.tipo}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Observations */}
+                {form.observacoes && (
+                  <div className="bg-dark-800 rounded-lg p-3">
+                    <div className="text-xs text-gray-500 mb-1">Observações</div>
+                    <p className="text-gray-300 text-sm">{form.observacoes}</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </Card>
+        )
+      })}
+    </div>
   )
 }
 
-// Tab 9: Arquivos
-export function ArquivosTab() {
-  return (
-    <Card className="p-6">
-      <EmptyState
-        icon={<FileText />}
-        title="Arquivos"
-        description="Upload e gestão de arquivos em desenvolvimento"
-      />
-    </Card>
-  )
-}
-
-// Tab 10: Financeiro
+// Tab 8: Financeiro
 export function FinanceiroTab({ alunoId }: { alunoId: string }) {
   const { toast } = useToast()
   const [cobrancas, setCobrancas] = useState<Cobranca[]>([])

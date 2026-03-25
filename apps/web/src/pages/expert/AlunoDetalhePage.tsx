@@ -1,5 +1,5 @@
 /**
- * Página de Detalhes do Aluno — 10 abas completas
+ * Página de Detalhes do Aluno — 8 abas organizadas
  */
 import { useState, useEffect, useCallback } from 'react'
 import { api, type Aluno, ApiError } from '../../lib/api'
@@ -16,9 +16,8 @@ import {
   DetalhesTab,
   TreinosTab,
   NutricaoTab,
+  FormulariosTab,
   EvolucaoTab,
-  WhatsAppTab,
-  ArquivosTab,
   FinanceiroTab,
 } from './aluno-tabs'
 import {
@@ -29,8 +28,7 @@ import {
   Calendar,
   Apple,
   TrendingUp,
-  MessageSquare,
-  FileText,
+  ClipboardList,
   DollarSign,
 } from 'lucide-react'
 
@@ -126,13 +124,8 @@ export function AlunoDetalhePage({ alunoId, onNavigate }: Props) {
             content: <TreinosTab alunoId={alunoId} />,
           },
           {
-            id: 'chat',
-            label: <TabLabel icon={<MessageCircle className="w-4 h-4" />} text="Chat" />,
-            content: <ChatInline alunoId={alunoId} />,
-          },
-          {
-            id: 'periodizacao',
-            label: <TabLabel icon={<Calendar className="w-4 h-4" />} text="Periodização" />,
+            id: 'calendario',
+            label: <TabLabel icon={<Calendar className="w-4 h-4" />} text="Calendário" />,
             content: <CalendarioPage alunoId={alunoId} alunoNome={aluno.nome} />,
           },
           {
@@ -141,9 +134,9 @@ export function AlunoDetalhePage({ alunoId, onNavigate }: Props) {
             content: <NutricaoTab alunoId={alunoId} />,
           },
           {
-            id: 'calendario',
-            label: <TabLabel icon={<Calendar className="w-4 h-4" />} text="Calendário" />,
-            content: <CalendarioPage alunoId={alunoId} alunoNome={aluno.nome} />,
+            id: 'formularios',
+            label: <TabLabel icon={<ClipboardList className="w-4 h-4" />} text="Formulários" />,
+            content: <FormulariosTab alunoId={alunoId} />,
           },
           {
             id: 'evolucao',
@@ -151,14 +144,9 @@ export function AlunoDetalhePage({ alunoId, onNavigate }: Props) {
             content: <EvolucaoTab alunoId={alunoId} />,
           },
           {
-            id: 'whatsapp',
-            label: <TabLabel icon={<MessageSquare className="w-4 h-4" />} text="WhatsApp" />,
-            content: <WhatsAppTab aluno={aluno} />,
-          },
-          {
-            id: 'arquivos',
-            label: <TabLabel icon={<FileText className="w-4 h-4" />} text="Arquivos" />,
-            content: <ArquivosTab />,
+            id: 'chat',
+            label: <TabLabel icon={<MessageCircle className="w-4 h-4" />} text="Chat" />,
+            content: <ChatInline alunoId={alunoId} />,
           },
           {
             id: 'financeiro',
