@@ -25,7 +25,7 @@ export interface Env {
   STRIPE_SECRET_KEY: string
   STRIPE_WEBHOOK_SECRET: string
   ANTHROPIC_API_KEY: string
-  RESEND_API_KEY: string
+  SENDGRID_API_KEY: string
   ADMIN_SECRET: string
 
   // ── Variáveis ──

@@ -1,0 +1,16 @@
+name = "wazefit-email"
+main = "src/index.ts"
+compatibility_date = "2024-12-30"
+compatibility_flags = ["nodejs_compat"]
+
+# Queue Consumer
+[[queues.consumers]]
+queue = "wazefit-emails"
+max_batch_size = 10
+max_retries = 3
+dead_letter_queue = "wazefit-emails-dlq"
+
+[vars]
+ENVIRONMENT = "production"
+FROM_EMAIL = "noreply@wazefit.com"
+FROM_NAME = "WazeFit"
