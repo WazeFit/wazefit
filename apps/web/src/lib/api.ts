@@ -447,11 +447,12 @@ export interface TenantBranding {
 
 export interface DominioTenant {
   id: string
-  tenant_id: string
+  tenant_id?: string
   dominio: string
-  verificado: boolean
-  registro_txt: string
-  created_at: string
+  status: 'pending' | 'active' | 'failed'
+  verificado_em: string | null
+  ssl_status: string | null
+  criado_em: string
 }
 
 export interface DominioInput {
@@ -765,13 +766,13 @@ export const api = {
 
   dominios: {
     list: () =>
-      requestList<DominioTenant>('GET', '/api/v1/dominios'),
+      requestList<DominioTenant>('GET', '/api/v1/tenant/dominios'),
     create: (data: DominioInput) =>
-      request<DominioTenant>('POST', '/api/v1/dominios', data),
-    delete: (id: string) =>
-      request<{ ok: boolean }>('DELETE', `/api/v1/dominios/${id}`),
+      request<DominioTenant>('POST', '/api/v1/tenant/dominios', data),
+    remove: (id: string) =>
+      request<{ ok: boolean }>('DELETE', `/api/v1/tenant/dominios/${id}`),
     verificar: (id: string) =>
-      request<{ verificado: boolean }>('POST', `/api/v1/dominios/${id}/verificar`),
+      request<{ verificado: boolean }>('POST', `/api/v1/tenant/dominios/${id}/verificar`),
   },
 
   push: {

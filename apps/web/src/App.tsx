@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react'
 import { checkSession, logout as doLogout } from './stores/auth'
 import type { User, Tenant } from './stores/auth'
 import { ToastProvider } from './components/ui/Toast'
+import { TenantProvider } from './contexts/TenantContext'
 
 // Auth
 import { LoginPage } from './pages/auth/LoginPage'
@@ -188,9 +189,11 @@ function AppInner() {
 
 export function App() {
   return (
-    <ToastProvider>
-      <AppInner />
-    </ToastProvider>
+    <TenantProvider>
+      <ToastProvider>
+        <AppInner />
+      </ToastProvider>
+    </TenantProvider>
   )
 }
 

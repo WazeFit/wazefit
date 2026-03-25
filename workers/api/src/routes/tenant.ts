@@ -8,10 +8,10 @@
 import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
-import { eq, and } from 'drizzle-orm'
+import { eq, and, isNull } from 'drizzle-orm'
 import type { Env, AuthVariables } from '../types'
 import { createDB } from '../db/client'
-import { tenantConfig, tenants } from '../db/schema'
+import { tenantConfig, tenants, dominiosTenant } from '../db/schema'
 import { generateId, now } from '../lib/id'
 import { authMiddleware, expertOnly } from '../middleware/auth'
 
@@ -121,6 +121,70 @@ tenantRouter.get('/branding', zValidator('query', brandingQuery), async (c) => {
     favicon_url: configMap['favicon_url'] ?? null,
     cor_primaria: configMap['cor_primaria'] ?? tenant.cor_primaria,
     cor_secundaria: configMap['cor_secundaria'] ?? tenant.cor_secundaria,
+    descricao: configMap['descricao'] ?? null,
+  })
+})
+
+// GET /tenant/branding-by-host — Branding público por hostname (sem auth)
+tenantRouter.get('/branding-by-host', async (c) => {
+  const host = c.req.query('host')
+  if (!host) return c.json({ error: 'Parâmetro host é obrigatório.', code: 400 }, 400)
+
+  const db = createDB(c.env.DB)
+  let tenantRow: { id: string; nome: string; slug: string; logo_url: string | null; cor_primaria: string | null; cor_secundaria: string | null } | undefined
+
+  // Check if it's a *.wazefit.com subdomain
+  const wazeMatch = host.match(/^([a-z0-9-]+)\.wazefit\.com$/)
+  if (wazeMatch && wazeMatch[1] !== 'www' && wazeMatch[1] !== 'api') {
+    const slug = wazeMatch[1]!
+    tenantRow = await db.select({
+      id: tenants.id,
+      nome: tenants.nome,
+      slug: tenants.slug,
+      logo_url: tenants.logo_url,
+      cor_primaria: tenants.cor_primaria,
+      cor_secundaria: tenants.cor_secundaria,
+    }).from(tenants).where(eq(tenants.slug, slug)).get()
+  } else {
+    // Custom domain lookup
+    const dominio = await db.select({
+      tenant_id: dominiosTenant.tenant_id,
+    }).from(dominiosTenant)
+      .where(and(eq(dominiosTenant.dominio, host), eq(dominiosTenant.status, 'active'), isNull(dominiosTenant.deletado_em)))
+      .get()
+
+    if (dominio) {
+      tenantRow = await db.select({
+        id: tenants.id,
+        nome: tenants.nome,
+        slug: tenants.slug,
+        logo_url: tenants.logo_url,
+        cor_primaria: tenants.cor_primaria,
+        cor_secundaria: tenants.cor_secundaria,
+      }).from(tenants).where(eq(tenants.id, dominio.tenant_id)).get()
+    }
+  }
+
+  if (!tenantRow) return c.json({ error: 'Tenant não encontrado.', code: 404 }, 404)
+
+  // Fetch branding configs
+  const configs = await db.select().from(tenantConfig)
+    .where(eq(tenantConfig.tenant_id, tenantRow.id))
+
+  const configMap: Record<string, string | null> = {}
+  for (const cfg of configs) {
+    if ((BRANDING_KEYS as readonly string[]).includes(cfg.chave)) {
+      configMap[cfg.chave] = cfg.valor
+    }
+  }
+
+  return c.json({
+    nome: configMap['nome_exibicao'] ?? tenantRow.nome,
+    slug: tenantRow.slug,
+    logo_url: configMap['logo_url'] ?? tenantRow.logo_url,
+    favicon_url: configMap['favicon_url'] ?? null,
+    cor_primaria: configMap['cor_primaria'] ?? tenantRow.cor_primaria,
+    cor_secundaria: configMap['cor_secundaria'] ?? tenantRow.cor_secundaria,
     descricao: configMap['descricao'] ?? null,
   })
 })

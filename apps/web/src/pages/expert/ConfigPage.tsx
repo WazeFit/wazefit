@@ -2,11 +2,13 @@
  * ConfigPage - Configurações white label do tenant.
  */
 import { useState, useEffect, useCallback } from 'react'
-import { api, ApiError } from '../../lib/api'
+import { api, ApiError, type DominioTenant } from '../../lib/api'
+import { getSavedTenant } from '../../stores/auth'
 import { Button } from '../../components/ui/Button'
 import { Card, CardHeader, CardBody } from '../../components/ui/Card'
 import { Input } from '../../components/ui/Input'
 import { Textarea } from '../../components/ui/Textarea'
+import { Badge } from '../../components/ui/Badge'
 import { PageLoader } from '../../components/ui/LoadingSpinner'
 import { useToast } from '../../components/ui/Toast'
 
@@ -19,6 +21,22 @@ export function ConfigPage() {
   const [corPrimaria, setCorPrimaria] = useState('#22c55e')
   const [corSecundaria, setCorSecundaria] = useState('#111827')
   const [descricao, setDescricao] = useState('')
+
+  // Domínios
+  const [dominios, setDominios] = useState<DominioTenant[]>([])
+  const [novoDominio, setNovoDominio] = useState('')
+  const [addingDominio, setAddingDominio] = useState(false)
+  const [verificandoId, setVerificandoId] = useState<string | null>(null)
+  const tenantSlug = getSavedTenant()?.slug || ''
+
+  const loadDominios = useCallback(async () => {
+    try {
+      const list = await api.dominios.list()
+      setDominios(list)
+    } catch {
+      // silently fail — dominios section is secondary
+    }
+  }, [])
 
   const load = useCallback(async () => {
     try {
@@ -35,7 +53,50 @@ export function ConfigPage() {
     }
   }, [toast])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => { load(); loadDominios() }, [load, loadDominios])
+
+  async function handleAddDominio() {
+    if (!novoDominio.trim()) return
+    try {
+      setAddingDominio(true)
+      await api.dominios.create({ dominio: novoDominio.trim().toLowerCase() })
+      toast('success', 'Domínio adicionado! Configure o CNAME e verifique.')
+      setNovoDominio('')
+      await loadDominios()
+    } catch (err) {
+      toast('error', err instanceof ApiError ? err.message : 'Erro ao adicionar domínio')
+    } finally {
+      setAddingDominio(false)
+    }
+  }
+
+  async function handleVerificar(id: string) {
+    try {
+      setVerificandoId(id)
+      const res = await api.dominios.verificar(id)
+      if (res.verificado) {
+        toast('success', 'DNS verificado com sucesso! Domínio ativo.')
+      } else {
+        toast('info', 'DNS ainda não aponta corretamente. Verifique a configuração.')
+      }
+      await loadDominios()
+    } catch (err) {
+      toast('error', err instanceof ApiError ? err.message : 'Falha na verificação DNS')
+      await loadDominios()
+    } finally {
+      setVerificandoId(null)
+    }
+  }
+
+  async function handleRemoverDominio(id: string) {
+    try {
+      await api.dominios.remove(id)
+      toast('success', 'Domínio removido')
+      await loadDominios()
+    } catch (err) {
+      toast('error', err instanceof ApiError ? err.message : 'Erro ao remover domínio')
+    }
+  }
 
   async function handleSave() {
     try {
@@ -134,6 +195,87 @@ export function ConfigPage() {
           💾 Salvar Configurações
         </Button>
       </div>
+
+      {/* Domínio Personalizado */}
+      <Card>
+        <CardHeader>
+          <h2 className="text-lg font-semibold text-white">🌐 Domínio Personalizado</h2>
+        </CardHeader>
+        <CardBody className="space-y-5">
+          {/* Subdomínio atual */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">Subdomínio WazeFit</label>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 px-3 py-2 bg-dark-800 border border-gray-700 rounded-lg text-gray-300 text-sm">
+                {tenantSlug ? `${tenantSlug}.wazefit.com` : 'Carregando...'}
+              </div>
+              <Badge variant="success">Ativo</Badge>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">Sempre disponível — seus alunos podem acessar por este endereço.</p>
+          </div>
+
+          {/* Domínios custom */}
+          {dominios.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Domínios Personalizados</label>
+              <div className="space-y-2">
+                {dominios.map(d => (
+                  <div key={d.id} className="flex items-center gap-2 px-3 py-2 bg-dark-800 border border-gray-700 rounded-lg">
+                    <span className="flex-1 text-sm text-white">{d.dominio}</span>
+                    <Badge variant={d.status === 'active' ? 'success' : d.status === 'pending' ? 'warning' : 'danger'}>
+                      {d.status === 'active' ? 'Ativo' : d.status === 'pending' ? 'Pendente' : 'Falhou'}
+                    </Badge>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => handleVerificar(d.id)}
+                      loading={verificandoId === d.id}
+                    >
+                      Verificar DNS
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      onClick={() => handleRemoverDominio(d.id)}
+                    >
+                      Remover
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Adicionar domínio */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">Adicionar Domínio</label>
+            <div className="flex gap-2">
+              <Input
+                placeholder="app.seudominio.com"
+                value={novoDominio}
+                onChange={e => setNovoDominio(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleAddDominio()}
+                className="flex-1"
+              />
+              <Button onClick={handleAddDominio} loading={addingDominio}>
+                Adicionar
+              </Button>
+            </div>
+          </div>
+
+          {/* Instruções DNS */}
+          <div className="bg-blue-500/5 border border-blue-500/20 rounded-lg p-4">
+            <h3 className="text-sm font-medium text-blue-400 mb-2">📋 Como configurar seu domínio</h3>
+            <ol className="text-xs text-gray-400 space-y-1.5 list-decimal list-inside">
+              <li>Acesse o painel DNS do seu provedor de domínio</li>
+              <li>Adicione um registro <strong className="text-gray-300">CNAME</strong> apontando para <code className="bg-dark-800 px-1.5 py-0.5 rounded text-blue-300">wazefit.com</code></li>
+              <li>Exemplo: <code className="bg-dark-800 px-1.5 py-0.5 rounded text-gray-300">app.seudominio.com</code> → <code className="bg-dark-800 px-1.5 py-0.5 rounded text-gray-300">CNAME</code> → <code className="bg-dark-800 px-1.5 py-0.5 rounded text-blue-300">wazefit.com</code></li>
+              <li>Aguarde a propagação DNS (pode levar até 24h)</li>
+              <li>Clique em <strong className="text-gray-300">"Verificar DNS"</strong> para ativar</li>
+            </ol>
+          </div>
+        </CardBody>
+      </Card>
     </div>
   )
 }
