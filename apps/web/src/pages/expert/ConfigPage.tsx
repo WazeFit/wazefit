@@ -190,12 +190,6 @@ export function ConfigPage() {
         </CardBody>
       </Card>
 
-      <div className="flex justify-end">
-        <Button onClick={handleSave} loading={saving} size="lg">
-          💾 Salvar Configurações
-        </Button>
-      </div>
-
       {/* Domínio Personalizado */}
       <Card>
         <CardHeader>
@@ -276,6 +270,12 @@ export function ConfigPage() {
           </div>
         </CardBody>
       </Card>
+
+      <div className="flex justify-end">
+        <Button onClick={handleSave} loading={saving} size="lg">
+          💾 Salvar Configurações
+        </Button>
+      </div>
     </div>
   )
 }
