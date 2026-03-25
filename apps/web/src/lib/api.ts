@@ -79,6 +79,8 @@ async function requestList<T>(method: string, path: string, body?: unknown): Pro
 
 // ── Types ──
 
+export type TipoExercicio = 'forca' | 'aerobico' | 'funcional'
+
 export interface Exercicio {
   id: string
   nome: string
@@ -86,6 +88,9 @@ export interface Exercicio {
   equipamento: string
   video_url: string | null
   instrucoes: string | null
+  tipo_exercicio: TipoExercicio | null
+  subtipo: string | null
+  dificuldade: string | null
   created_at: string
 }
 
@@ -95,6 +100,8 @@ export interface ExercicioInput {
   equipamento?: string
   video_url?: string
   instrucoes?: string
+  tipo_exercicio?: TipoExercicio
+  subtipo?: string
 }
 
 export interface FichaExercicio {

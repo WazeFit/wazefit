@@ -32,6 +32,8 @@ const createExercicioSchema = z.object({
   video_url: z.string().url().optional(),
   thumbnail_url: z.string().url().optional(),
   dificuldade: z.enum(['iniciante', 'intermediario', 'avancado']).optional(),
+  tipo_exercicio: z.enum(['forca', 'aerobico', 'funcional']).optional(),
+  subtipo: z.string().optional(),
 })
 
 const updateExercicioSchema = z.object({
@@ -42,6 +44,8 @@ const updateExercicioSchema = z.object({
   video_url: z.string().url().optional(),
   thumbnail_url: z.string().url().optional(),
   dificuldade: z.enum(['iniciante', 'intermediario', 'avancado']).optional(),
+  tipo_exercicio: z.enum(['forca', 'aerobico', 'funcional']).optional(),
+  subtipo: z.string().optional(),
 })
 
 const listQuerySchema = z.object({
@@ -72,6 +76,8 @@ exerciciosRouter.post('/', zValidator('json', createExercicioSchema), async (c) 
     video_url: body.video_url ?? null,
     thumbnail_url: body.thumbnail_url ?? null,
     dificuldade: body.dificuldade ?? 'intermediario',
+    tipo_exercicio: body.tipo_exercicio ?? 'forca',
+    subtipo: body.subtipo ?? null,
     criado_em: timestamp,
     atualizado_em: timestamp,
   })
@@ -83,6 +89,8 @@ exerciciosRouter.post('/', zValidator('json', createExercicioSchema), async (c) 
       grupo_muscular: body.grupo_muscular,
       equipamento: body.equipamento ?? null,
       dificuldade: body.dificuldade ?? 'intermediario',
+      tipo_exercicio: body.tipo_exercicio ?? 'forca',
+      subtipo: body.subtipo ?? null,
       criado_em: timestamp,
     },
     201,
@@ -125,6 +133,8 @@ exerciciosRouter.get('/', zValidator('query', listQuerySchema), async (c) => {
       video_url: exercicios.video_url,
       thumbnail_url: exercicios.thumbnail_url,
       dificuldade: exercicios.dificuldade,
+      tipo_exercicio: exercicios.tipo_exercicio,
+      subtipo: exercicios.subtipo,
       criado_em: exercicios.criado_em,
     })
     .from(exercicios)
@@ -162,6 +172,8 @@ exerciciosRouter.get('/:id', async (c) => {
       video_url: exercicios.video_url,
       thumbnail_url: exercicios.thumbnail_url,
       dificuldade: exercicios.dificuldade,
+      tipo_exercicio: exercicios.tipo_exercicio,
+      subtipo: exercicios.subtipo,
       criado_em: exercicios.criado_em,
       atualizado_em: exercicios.atualizado_em,
     })
@@ -217,6 +229,8 @@ exerciciosRouter.put('/:id', zValidator('json', updateExercicioSchema), async (c
       video_url: exercicios.video_url,
       thumbnail_url: exercicios.thumbnail_url,
       dificuldade: exercicios.dificuldade,
+      tipo_exercicio: exercicios.tipo_exercicio,
+      subtipo: exercicios.subtipo,
       atualizado_em: exercicios.atualizado_em,
     })
     .from(exercicios)

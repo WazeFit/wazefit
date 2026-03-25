@@ -125,6 +125,8 @@ export const exercicios = sqliteTable(
     dificuldade: text('dificuldade', { enum: ['iniciante', 'intermediario', 'avancado'] }).default(
       'intermediario',
     ),
+    tipo_exercicio: text('tipo_exercicio', { enum: ['forca', 'aerobico', 'funcional'] }).default('forca'),
+    subtipo: text('subtipo'),
     criado_em: text('criado_em').notNull().default(now),
     atualizado_em: text('atualizado_em').notNull().default(now),
     deletado_em: text('deletado_em'),
