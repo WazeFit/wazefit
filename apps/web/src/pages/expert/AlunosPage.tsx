@@ -2,6 +2,7 @@
  * Página de Alunos — lista, busca, filtros e criação.
  */
 import { useState, useEffect } from 'react'
+import { api, type Aluno, type PaginatedResponse, ApiError } from '../../lib/api'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
@@ -10,6 +11,7 @@ import { Badge } from '../../components/ui/Badge'
 import { Modal } from '../../components/ui/Modal'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
+import { useToast } from '../../components/ui/Toast'
 import { 
   Plus, 
   Search, 
@@ -20,65 +22,34 @@ import {
   Activity,
 } from 'lucide-react'
 
-interface Aluno {
-  id: string
-  nome: string
-  email: string
-  telefone?: string
-  status: 'ativo' | 'inativo' | 'trial'
-  dataInicio: string
-  ultimoTreino?: string
-  avatar?: string
+interface AlunosPageProps {
+  onNavigate: (path: string) => void
 }
 
-export function AlunosPage() {
+export function AlunosPage({ onNavigate }: AlunosPageProps) {
+  const { toast } = useToast()
   const [alunos, setAlunos] = useState<Aluno[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'ativo' | 'inativo' | 'trial'>('all')
   const [showCreateModal, setShowCreateModal] = useState(false)
 
-  // Mock data - substituir por API real
+  // Carregar alunos da API
   useEffect(() => {
-    setTimeout(() => {
-      setAlunos([
-        {
-          id: '1',
-          nome: 'João Silva',
-          email: 'joao@example.com',
-          telefone: '(11) 99999-9999',
-          status: 'ativo',
-          dataInicio: '2024-01-15',
-          ultimoTreino: '2024-03-20',
-        },
-        {
-          id: '2',
-          nome: 'Maria Santos',
-          email: 'maria@example.com',
-          status: 'ativo',
-          dataInicio: '2024-02-01',
-          ultimoTreino: '2024-03-21',
-        },
-        {
-          id: '3',
-          nome: 'Pedro Oliveira',
-          email: 'pedro@example.com',
-          telefone: '(11) 98888-8888',
-          status: 'trial',
-          dataInicio: '2024-03-15',
-        },
-        {
-          id: '4',
-          nome: 'Ana Costa',
-          email: 'ana@example.com',
-          status: 'inativo',
-          dataInicio: '2023-12-01',
-          ultimoTreino: '2024-02-28',
-        },
-      ])
-      setLoading(false)
-    }, 800)
+    loadAlunos()
   }, [])
+
+  async function loadAlunos() {
+    setLoading(true)
+    try {
+      const response: PaginatedResponse<Aluno> = await api.alunos.list(1, 100)
+      setAlunos(response.data)
+    } catch (err) {
+      toast('error', err instanceof ApiError ? err.message : 'Erro ao carregar alunos')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // Filtrar alunos
   const filteredAlunos = alunos.filter((aluno) => {
@@ -96,18 +67,18 @@ export function AlunosPage() {
     inativos: alunos.filter(a => a.status === 'inativo').length,
   }
 
-  const getStatusBadge = (status: Aluno['status']) => {
-    const variants = {
-      ativo: 'success' as const,
-      trial: 'warning' as const,
-      inativo: 'default' as const,
+  const getStatusBadge = (status: string) => {
+    const variants: Record<string, 'success' | 'warning' | 'default'> = {
+      ativo: 'success',
+      trial: 'warning',
+      inativo: 'default',
     }
-    const labels = {
+    const labels: Record<string, string> = {
       ativo: 'Ativo',
       trial: 'Trial',
       inativo: 'Inativo',
     }
-    return <Badge variant={variants[status]}>{labels[status]}</Badge>
+    return <Badge variant={variants[status] || 'default'}>{labels[status] || status}</Badge>
   }
 
   return (
@@ -281,19 +252,17 @@ export function AlunosPage() {
 
                     <div className="flex items-center gap-2 text-gray-400">
                       <Calendar className="w-4 h-4 flex-shrink-0" />
-                      <span>Desde {new Date(aluno.dataInicio).toLocaleDateString('pt-BR')}</span>
+                      <span>Desde {new Date(aluno.created_at).toLocaleDateString('pt-BR')}</span>
                     </div>
-
-                    {aluno.ultimoTreino && (
-                      <div className="flex items-center gap-2 text-gray-400">
-                        <Activity className="w-4 h-4 flex-shrink-0" />
-                        <span>Último treino: {new Date(aluno.ultimoTreino).toLocaleDateString('pt-BR')}</span>
-                      </div>
-                    )}
                   </div>
 
                   <div className="mt-4 pt-4 border-t border-dark-800">
-                    <Button variant="ghost" size="sm" className="w-full">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="w-full"
+                      onClick={() => onNavigate(`/expert/alunos/${aluno.id}`)}
+                    >
                       Ver Detalhes
                     </Button>
                   </div>
@@ -308,9 +277,9 @@ export function AlunosPage() {
       <CreateAlunoModal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
-        onSuccess={(novoAluno) => {
-          setAlunos([...alunos, novoAluno])
+        onSuccess={() => {
           setShowCreateModal(false)
+          loadAlunos()
         }}
       />
     </div>
@@ -321,15 +290,15 @@ export function AlunosPage() {
 interface CreateAlunoModalProps {
   isOpen: boolean
   onClose: () => void
-  onSuccess: (aluno: Aluno) => void
+  onSuccess: () => void
 }
 
 function CreateAlunoModal({ isOpen, onClose, onSuccess }: CreateAlunoModalProps) {
+  const { toast } = useToast()
   const [formData, setFormData] = useState({
     nome: '',
     email: '',
     telefone: '',
-    status: 'trial' as Aluno['status'],
   })
   const [loading, setLoading] = useState(false)
 
@@ -337,20 +306,20 @@ function CreateAlunoModal({ isOpen, onClose, onSuccess }: CreateAlunoModalProps)
     e.preventDefault()
     setLoading(true)
 
-    // Simular API call
-    setTimeout(() => {
-      const novoAluno: Aluno = {
-        id: String(Date.now()),
+    try {
+      await api.alunos.create({
         nome: formData.nome,
         email: formData.email,
-        ...(formData.telefone && { telefone: formData.telefone }),
-        status: formData.status,
-        dataInicio: new Date().toISOString().split('T')[0]!,
-      }
-      onSuccess(novoAluno)
+        telefone: formData.telefone || undefined,
+      })
+      toast('success', 'Aluno criado com sucesso!')
+      setFormData({ nome: '', email: '', telefone: '' })
+      onSuccess()
+    } catch (err) {
+      toast('error', err instanceof ApiError ? err.message : 'Erro ao criar aluno')
+    } finally {
       setLoading(false)
-      setFormData({ nome: '', email: '', telefone: '', status: 'trial' })
-    }, 1000)
+    }
   }
 
   return (
@@ -394,32 +363,6 @@ function CreateAlunoModal({ isOpen, onClose, onSuccess }: CreateAlunoModalProps)
           value={formData.telefone}
           onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
         />
-
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
-            Status inicial
-          </label>
-          <div className="grid grid-cols-3 gap-2">
-            {(['trial', 'ativo', 'inativo'] as const).map((status) => (
-              <button
-                key={status}
-                type="button"
-                onClick={() => setFormData({ ...formData, status })}
-                className={`
-                  px-4 py-2 rounded-lg text-sm font-medium transition-all
-                  ${formData.status === status
-                    ? 'bg-brand-500 text-white'
-                    : 'bg-dark-800 text-gray-400 hover:bg-dark-700'
-                  }
-                `}
-              >
-                {status === 'trial' && 'Trial'}
-                {status === 'ativo' && 'Ativo'}
-                {status === 'inativo' && 'Inativo'}
-              </button>
-            ))}
-          </div>
-        </div>
       </form>
     </Modal>
   )

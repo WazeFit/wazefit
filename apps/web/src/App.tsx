@@ -162,8 +162,8 @@ function AppInner() {
     return (
       <ExpertLayout user={user} tenant={tenant} currentPath={appPath} onNavigate={navigate} onLogout={handleLogout}>
         {appPath === '/dashboard' && <DashboardPage user={user} tenant={tenant} onNavigate={navigate} />}
-        {appPath === '/alunos' && <AlunosPage />}
-        {alunoDetalheMatch && <AlunoDetalhePage alunoId={alunoDetalheMatch[1]!} />}
+        {appPath === '/alunos' && <AlunosPage onNavigate={navigate} />}
+        {alunoDetalheMatch && <AlunoDetalhePage alunoId={alunoDetalheMatch[1]!} onNavigate={navigate} />}
         {appPath === '/expert/exercicios' && <ExerciciosPage />}
         {appPath === '/expert/fichas' && <FichasPage />}
         {appPath === '/expert/biblioteca' && <BibliotecaPage />}

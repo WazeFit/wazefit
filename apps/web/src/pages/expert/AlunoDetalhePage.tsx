@@ -1,30 +1,53 @@
+/**
+ * Página de Detalhes do Aluno — 10 abas completas
+ */
 import { useState, useEffect, useCallback } from 'react'
-import { api, type Aluno, type EvolucaoData, ApiError } from '../../lib/api'
+import { api, type Aluno, ApiError } from '../../lib/api'
 import { Tabs } from '../../components/ui/Tabs'
 import { Badge } from '../../components/ui/Badge'
-import { PageLoader } from '../../components/ui/LoadingSpinner'
+import { Button } from '../../components/ui/Button'
+import { Card } from '../../components/ui/Card'
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
+import { EmptyState } from '../../components/ui/EmptyState'
 import { useToast } from '../../components/ui/Toast'
 import { CalendarioPage } from './CalendarioPage'
 import { ChatInline } from './ChatInline'
+import {
+  DetalhesTab,
+  TreinosTab,
+  NutricaoTab,
+  EvolucaoTab,
+  WhatsAppTab,
+  ArquivosTab,
+  FinanceiroTab,
+} from './aluno-tabs'
+import {
+  ArrowLeft,
+  User,
+  Dumbbell,
+  MessageCircle,
+  Calendar,
+  Apple,
+  TrendingUp,
+  MessageSquare,
+  FileText,
+  DollarSign,
+} from 'lucide-react'
 
 interface Props {
   alunoId: string
+  onNavigate: (path: string) => void
 }
 
-export function AlunoDetalhePage({ alunoId }: Props) {
+export function AlunoDetalhePage({ alunoId, onNavigate }: Props) {
   const { toast } = useToast()
   const [aluno, setAluno] = useState<Aluno | null>(null)
-  const [evolucao, setEvolucao] = useState<EvolucaoData | null>(null)
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async () => {
     try {
-      const [a, ev] = await Promise.all([
-        api.alunos.get(alunoId),
-        api.evolucao.get(alunoId, 30).catch(() => null),
-      ])
+      const a = await api.alunos.get(alunoId)
       setAluno(a)
-      setEvolucao(ev)
     } catch (err) {
       toast('error', err instanceof ApiError ? err.message : 'Erro ao carregar aluno')
     } finally {
@@ -34,55 +57,113 @@ export function AlunoDetalhePage({ alunoId }: Props) {
 
   useEffect(() => { load() }, [load])
 
-  if (loading) return <PageLoader />
-  if (!aluno) return <div className="text-center py-12 text-gray-500">Aluno não encontrado</div>
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <LoadingSpinner size="lg" text="Carregando aluno..." />
+      </div>
+    )
+  }
+
+  if (!aluno) {
+    return (
+      <Card className="p-12">
+        <EmptyState
+          icon={<User />}
+          title="Aluno não encontrado"
+          description="O aluno que você está procurando não existe ou foi removido"
+          action={{
+            label: 'Voltar para Alunos',
+            onClick: () => onNavigate('/expert/alunos'),
+          }}
+        />
+      </Card>
+    )
+  }
 
   const statusVariant = aluno.status === 'ativo' ? 'success' : aluno.status === 'inativo' ? 'danger' : 'warning'
 
   return (
     <div>
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
-        <div className="w-14 h-14 bg-gray-700 rounded-full flex items-center justify-center text-xl font-bold">
-          {aluno.nome.charAt(0)}
-        </div>
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold">{aluno.nome}</h1>
-            <Badge variant={statusVariant}>{aluno.status}</Badge>
+      {/* Header com botão voltar */}
+      <div className="mb-6">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => onNavigate('/expert/alunos')}
+          className="mb-4"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Voltar para Alunos
+        </Button>
+
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 bg-gradient-to-br from-brand-500 to-brand-600 rounded-full flex items-center justify-center text-xl font-bold text-white shadow-glow-sm">
+            {aluno.nome.charAt(0).toUpperCase()}
           </div>
-          <p className="text-gray-400 text-sm">{aluno.email}</p>
-          {aluno.telefone && <p className="text-gray-500 text-xs">{aluno.telefone}</p>}
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold text-white">{aluno.nome}</h1>
+              <Badge variant={statusVariant}>{aluno.status}</Badge>
+            </div>
+            <p className="text-gray-400 text-sm">{aluno.email}</p>
+            {aluno.telefone && <p className="text-gray-500 text-xs">{aluno.telefone}</p>}
+          </div>
         </div>
       </div>
-
-      {/* Stats */}
-      {evolucao && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-          <StatCard label="Total Treinos" value={String(evolucao.total_treinos)} icon="🏋️" />
-          <StatCard label="Freq. Semanal" value={`${evolucao.frequencia_semanal}x`} icon="📊" />
-          <StatCard label="Sequência Atual" value={`${evolucao.sequencia_atual} dias`} icon="🔥" />
-          <StatCard label="Últimos 30 dias" value={`${evolucao.historico.filter((h) => h.treinou).length} treinos`} icon="📅" />
-        </div>
-      )}
 
       {/* Tabs */}
       <Tabs
         tabs={[
           {
+            id: 'detalhes',
+            label: <TabLabel icon={<User className="w-4 h-4" />} text="Detalhes" />,
+            content: <DetalhesTab aluno={aluno} onUpdate={load} />,
+          },
+          {
+            id: 'treinos',
+            label: <TabLabel icon={<Dumbbell className="w-4 h-4" />} text="Treinos" />,
+            content: <TreinosTab alunoId={alunoId} />,
+          },
+          {
+            id: 'chat',
+            label: <TabLabel icon={<MessageCircle className="w-4 h-4" />} text="Chat" />,
+            content: <ChatInline alunoId={alunoId} />,
+          },
+          {
+            id: 'periodizacao',
+            label: <TabLabel icon={<Calendar className="w-4 h-4" />} text="Periodização" />,
+            content: <CalendarioPage alunoId={alunoId} alunoNome={aluno.nome} />,
+          },
+          {
+            id: 'nutricao',
+            label: <TabLabel icon={<Apple className="w-4 h-4" />} text="Nutrição" />,
+            content: <NutricaoTab alunoId={alunoId} />,
+          },
+          {
             id: 'calendario',
-            label: '📅 Calendário',
+            label: <TabLabel icon={<Calendar className="w-4 h-4" />} text="Calendário" />,
             content: <CalendarioPage alunoId={alunoId} alunoNome={aluno.nome} />,
           },
           {
             id: 'evolucao',
-            label: '📊 Evolução',
-            content: evolucao ? <EvolucaoPanel data={evolucao} /> : <p className="text-gray-500">Sem dados de evolução</p>,
+            label: <TabLabel icon={<TrendingUp className="w-4 h-4" />} text="Evolução" />,
+            content: <EvolucaoTab alunoId={alunoId} />,
           },
           {
-            id: 'chat',
-            label: '💬 Chat',
-            content: <ChatInline alunoId={alunoId} />,
+            id: 'whatsapp',
+            label: <TabLabel icon={<MessageSquare className="w-4 h-4" />} text="WhatsApp" />,
+            content: <WhatsAppTab aluno={aluno} />,
+          },
+          {
+            id: 'arquivos',
+            label: <TabLabel icon={<FileText className="w-4 h-4" />} text="Arquivos" />,
+            content: <ArquivosTab />,
+          },
+          {
+            id: 'financeiro',
+            label: <TabLabel icon={<DollarSign className="w-4 h-4" />} text="Financeiro" />,
+            content: <FinanceiroTab alunoId={alunoId} />,
           },
         ]}
       />
@@ -90,35 +171,12 @@ export function AlunoDetalhePage({ alunoId }: Props) {
   )
 }
 
-function StatCard({ label, value, icon }: { label: string; value: string; icon: string }) {
+// Tab Label Helper
+function TabLabel({ icon, text }: { icon: React.ReactNode; text: string }) {
   return (
-    <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-4">
-      <div className="flex items-center gap-2 mb-1">
-        <span>{icon}</span>
-        <span className="text-xs text-gray-500">{label}</span>
-      </div>
-      <p className="text-xl font-bold text-white">{value}</p>
-    </div>
-  )
-}
-
-function EvolucaoPanel({ data }: { data: EvolucaoData }) {
-  return (
-    <div>
-      <h3 className="text-sm font-medium text-gray-300 mb-3">Últimos 30 dias</h3>
-      <div className="flex flex-wrap gap-1">
-        {data.historico.map((h) => (
-          <div
-            key={h.data}
-            title={`${h.data}: ${h.treinou ? 'Treinou' : 'Não treinou'}`}
-            className={`w-6 h-6 rounded-sm ${h.treinou ? 'bg-green-500' : 'bg-gray-800'}`}
-          />
-        ))}
-      </div>
-      <div className="flex items-center gap-4 mt-3 text-xs text-gray-500">
-        <span className="flex items-center gap-1"><span className="w-3 h-3 bg-green-500 rounded-sm" /> Treinou</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-3 bg-gray-800 rounded-sm" /> Descanso</span>
-      </div>
+    <div className="flex items-center gap-2">
+      {icon}
+      <span>{text}</span>
     </div>
   )
 }
