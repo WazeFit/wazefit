@@ -12,6 +12,7 @@ import { Users, Dumbbell, MessageSquare, DollarSign, TrendingUp, Calendar } from
 interface Props {
   user: User
   tenant: Tenant
+  onNavigate: (path: string) => void
 }
 
 interface DashboardData {
@@ -21,7 +22,7 @@ interface DashboardData {
   receitaMes: number
 }
 
-export function DashboardPage({ user, tenant }: Props) {
+export function DashboardPage({ user, tenant, onNavigate }: Props) {
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -36,7 +37,7 @@ export function DashboardPage({ user, tenant }: Props) {
 
         setData({
           totalAlunos: alunos.status === 'fulfilled' ? (alunos.value?.total ?? alunos.value?.data?.length ?? 0) : 0,
-          treinosHoje: 0, // Será implementado com execuções
+          treinosHoje: 0,
           mensagensNaoLidas: conversas.status === 'fulfilled' ? (conversas.value?.reduce((acc: number, c: { nao_lidas?: number }) => acc + (c.nao_lidas ?? 0), 0) ?? 0) : 0,
           receitaMes: financeiro.status === 'fulfilled' ? ((financeiro.value as { receita_mes?: number })?.receita_mes ?? 0) : 0,
         })
@@ -56,6 +57,7 @@ export function DashboardPage({ user, tenant }: Props) {
       value: loading ? '...' : String(data?.totalAlunos ?? 0), 
       bgColor: 'bg-brand-500/10',
       iconColor: 'text-brand-400',
+      path: '/expert/alunos',
     },
     { 
       icon: Dumbbell, 
@@ -63,6 +65,7 @@ export function DashboardPage({ user, tenant }: Props) {
       value: loading ? '...' : String(data?.treinosHoje ?? 0), 
       bgColor: 'bg-blue-500/10',
       iconColor: 'text-blue-400',
+      path: '/expert/fichas',
     },
     { 
       icon: MessageSquare, 
@@ -70,6 +73,7 @@ export function DashboardPage({ user, tenant }: Props) {
       value: loading ? '...' : String(data?.mensagensNaoLidas ?? 0), 
       bgColor: 'bg-purple-500/10',
       iconColor: 'text-purple-400',
+      path: '/expert/chat',
     },
     { 
       icon: DollarSign, 
@@ -77,6 +81,7 @@ export function DashboardPage({ user, tenant }: Props) {
       value: loading ? '...' : `R$ ${(data?.receitaMes ?? 0).toFixed(2)}`, 
       bgColor: 'bg-green-500/10',
       iconColor: 'text-green-400',
+      path: '/expert/financeiro',
     },
   ]
 
@@ -87,12 +92,16 @@ export function DashboardPage({ user, tenant }: Props) {
         description={`Bem-vindo ao painel do ${tenant.nome || 'WazeFit'}`}
       />
 
-      {/* Stats Cards */}
+      {/* Stats Cards — clicáveis */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {cards.map((card) => {
           const Icon = card.icon
           return (
-            <Card key={card.label} className="p-6 hover:border-dark-700 transition-all">
+            <Card
+              key={card.label}
+              className="p-6 hover:border-dark-600 transition-all cursor-pointer"
+              onClick={() => onNavigate(card.path)}
+            >
               <div className="flex items-center justify-between mb-4">
                 <div className={`w-12 h-12 ${card.bgColor} rounded-xl flex items-center justify-center`}>
                   <Icon className={`w-6 h-6 ${card.iconColor}`} />
@@ -117,8 +126,8 @@ export function DashboardPage({ user, tenant }: Props) {
               Cadastre seu primeiro aluno, crie exercícios e monte fichas de treino personalizadas.
             </p>
             <div className="flex gap-3 justify-center">
-              <Button variant="primary">Adicionar Aluno</Button>
-              <Button variant="outline">Ver Tutorial</Button>
+              <Button variant="primary" onClick={() => onNavigate('/expert/alunos')}>Adicionar Aluno</Button>
+              <Button variant="outline" onClick={() => onNavigate('/expert/exercicios')}>Criar Exercícios</Button>
             </div>
           </div>
         </Card>
@@ -127,7 +136,7 @@ export function DashboardPage({ user, tenant }: Props) {
       {/* Quick Actions */}
       {!loading && data && data.totalAlunos > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
-          <Card className="p-6">
+          <Card className="p-6 cursor-pointer hover:border-dark-600 transition-all" onClick={() => onNavigate('/expert/alunos')}>
             <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
               <Calendar className="w-5 h-5 text-brand-400" />
               Atividades Recentes
@@ -137,7 +146,7 @@ export function DashboardPage({ user, tenant }: Props) {
             </p>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-6 cursor-pointer hover:border-dark-600 transition-all" onClick={() => onNavigate('/expert/analytics')}>
             <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-brand-400" />
               Metas do Mês
