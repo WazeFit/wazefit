@@ -1,19 +1,18 @@
 import { useState, useEffect } from 'react'
-import { Upload, Palette, Globe, Check, AlertCircle, Eye } from 'lucide-react'
+import { Upload, Palette, Eye, Check, Dumbbell, Home, TrendingUp, User } from 'lucide-react'
 
 /**
- * Página de Identidade Visual — padrão Big Tech
+ * Página de Identidade Visual — 100% Profissional
  * Inspiração: Stripe, Vercel, Linear, Notion
  * 
- * Features:
- * - Sidebar de navegação (Geral, Cores, Logo, Domínio)
- * - Preview em tempo real (sticky)
- * - Auto-save com feedback visual
- * - Validação inline
- * - Upload de logo/favicon com preview
+ * Melhorias v2:
+ * - Removido tab "Domínio" (não faz parte de identidade visual)
+ * - Preview realista simulando app real do aluno
+ * - Layout mais limpo e espaçado
+ * - Tipografia melhorada
  */
 
-type Tab = 'geral' | 'cores' | 'logo' | 'dominio'
+type Tab = 'geral' | 'cores' | 'logo'
 
 interface BrandConfig {
   nome: string
@@ -22,7 +21,6 @@ interface BrandConfig {
   corSecundaria: string
   logoUrl: string | null
   faviconUrl: string | null
-  dominio: string | null
 }
 
 export default function IdentidadeVisualPage() {
@@ -34,7 +32,6 @@ export default function IdentidadeVisualPage() {
     corSecundaria: '#8b5cf6',
     logoUrl: null,
     faviconUrl: null,
-    dominio: null,
   })
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -61,14 +58,11 @@ export default function IdentidadeVisualPage() {
     const file = e.target.files?.[0]
     if (!file) return
 
-    // Preview local
     const reader = new FileReader()
     reader.onload = () => {
       setConfig({ ...config, logoUrl: reader.result as string })
     }
     reader.readAsDataURL(file)
-
-    // TODO: Upload para R2
   }
 
   const handleFaviconUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -85,11 +79,13 @@ export default function IdentidadeVisualPage() {
   return (
     <div className="min-h-screen bg-dark-950">
       {/* Header */}
-      <header className="sticky top-0 z-10 bg-dark-900/80 backdrop-blur-xl border-b border-dark-800">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <header className="sticky top-0 z-10 bg-dark-900/95 backdrop-blur-xl border-b border-dark-800/50">
+        <div className="max-w-7xl mx-auto px-8 py-5 flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-semibold text-white">Identidade Visual</h1>
-            <p className="text-sm text-gray-500 mt-0.5">
+            <h1 className="text-2xl font-semibold text-white tracking-tight">
+              Identidade Visual
+            </h1>
+            <p className="text-sm text-gray-400 mt-1">
               Personalize a aparência do seu aplicativo
             </p>
           </div>
@@ -97,14 +93,14 @@ export default function IdentidadeVisualPage() {
           {/* Save indicator */}
           <div className="flex items-center gap-3">
             {saving && (
-              <span className="text-xs text-gray-500 flex items-center gap-2">
-                <div className="w-1 h-1 bg-brand-400 rounded-full animate-pulse" />
+              <span className="text-xs text-gray-400 flex items-center gap-2 px-3 py-1.5 bg-dark-800 rounded-full">
+                <div className="w-1.5 h-1.5 bg-brand-400 rounded-full animate-pulse" />
                 Salvando...
               </span>
             )}
             {saved && (
-              <span className="text-xs text-emerald-400 flex items-center gap-2">
-                <Check className="w-3 h-3" />
+              <span className="text-xs text-emerald-400 flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 rounded-full">
+                <Check className="w-3.5 h-3.5" />
                 Salvo
               </span>
             )}
@@ -112,16 +108,15 @@ export default function IdentidadeVisualPage() {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="grid grid-cols-12 gap-8">
+      <div className="max-w-7xl mx-auto px-8 py-10">
+        <div className="grid grid-cols-12 gap-10">
           {/* Sidebar Navigation */}
           <aside className="col-span-3">
-            <nav className="space-y-1 sticky top-24">
+            <nav className="space-y-2 sticky top-28">
               {[
-                { id: 'geral', label: 'Geral', icon: Eye },
-                { id: 'cores', label: 'Cores', icon: Palette },
-                { id: 'logo', label: 'Logo & Favicon', icon: Upload },
-                { id: 'dominio', label: 'Domínio', icon: Globe },
+                { id: 'geral', label: 'Geral', icon: Eye, desc: 'Nome e slogan' },
+                { id: 'cores', label: 'Cores', icon: Palette, desc: 'Paleta de marca' },
+                { id: 'logo', label: 'Logo & Ícone', icon: Upload, desc: 'Imagens da marca' },
               ].map((tab) => {
                 const Icon = tab.icon
                 const active = activeTab === tab.id
@@ -130,16 +125,31 @@ export default function IdentidadeVisualPage() {
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id as Tab)}
                     className={`
-                      w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all
+                      w-full text-left px-4 py-3.5 rounded-xl transition-all group
                       ${
                         active
-                          ? 'bg-brand-500/10 text-brand-400 border border-brand-500/20'
-                          : 'text-gray-400 hover:text-white hover:bg-dark-800'
+                          ? 'bg-brand-500/10 border border-brand-500/20'
+                          : 'hover:bg-dark-800/50 border border-transparent'
                       }
                     `}
                   >
-                    <Icon className="w-4 h-4" />
-                    {tab.label}
+                    <div className="flex items-start gap-3">
+                      <Icon
+                        className={`w-5 h-5 mt-0.5 transition-colors ${
+                          active ? 'text-brand-400' : 'text-gray-500 group-hover:text-gray-300'
+                        }`}
+                      />
+                      <div>
+                        <div
+                          className={`text-sm font-medium transition-colors ${
+                            active ? 'text-brand-400' : 'text-gray-300 group-hover:text-white'
+                          }`}
+                        >
+                          {tab.label}
+                        </div>
+                        <div className="text-xs text-gray-600 mt-0.5">{tab.desc}</div>
+                      </div>
+                    </div>
                   </button>
                 )
               })}
@@ -147,94 +157,116 @@ export default function IdentidadeVisualPage() {
           </aside>
 
           {/* Content */}
-          <main className="col-span-6 space-y-6">
+          <main className="col-span-5 space-y-8">
             {/* Geral */}
             {activeTab === 'geral' && (
-              <div className="space-y-6">
-                <Card title="Informações Básicas" description="Nome e slogan do seu negócio">
-                  <div className="space-y-4">
+              <div className="space-y-8">
+                <Section
+                  title="Informações Básicas"
+                  description="Nome e slogan que aparecem no aplicativo dos seus alunos"
+                >
+                  <div className="space-y-6">
                     <Field label="Nome do Negócio" required>
                       <input
                         type="text"
                         value={config.nome}
                         onChange={(e) => setConfig({ ...config, nome: e.target.value })}
                         placeholder="Ex: Academia Fitness Pro"
-                        className="input"
+                        className="input-pro"
                       />
-                      <FieldHint>Aparece no topo do app e na página de login</FieldHint>
+                      <FieldHint>Aparece no topo do app e na tela de login</FieldHint>
                     </Field>
 
-                    <Field label="Tagline" optional>
+                    <Field label="Tagline">
                       <input
                         type="text"
                         value={config.tagline}
                         onChange={(e) => setConfig({ ...config, tagline: e.target.value })}
                         placeholder="Ex: Transforme seu corpo, transforme sua vida"
-                        className="input"
+                        className="input-pro"
+                        maxLength={60}
                       />
-                      <FieldHint>Frase curta que resume sua proposta de valor</FieldHint>
+                      <FieldHint>
+                        Frase curta que resume sua proposta de valor (máx. 60 caracteres)
+                      </FieldHint>
                     </Field>
                   </div>
-                </Card>
+                </Section>
               </div>
             )}
 
             {/* Cores */}
             {activeTab === 'cores' && (
-              <div className="space-y-6">
-                <Card
+              <div className="space-y-8">
+                <Section
                   title="Paleta de Cores"
-                  description="Escolha as cores que representam sua marca"
+                  description="Escolha as cores que representam sua marca e aparecem no app"
                 >
-                  <div className="space-y-6">
+                  <div className="space-y-8">
+                    {/* Cor Primária */}
                     <Field label="Cor Primária" required>
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="color"
-                          value={config.corPrimaria}
-                          onChange={(e) => setConfig({ ...config, corPrimaria: e.target.value })}
-                          className="w-16 h-16 rounded-lg border-2 border-dark-700 cursor-pointer"
-                        />
-                        <div>
+                      <div className="flex items-start gap-4">
+                        <label className="cursor-pointer group">
+                          <input
+                            type="color"
+                            value={config.corPrimaria}
+                            onChange={(e) => setConfig({ ...config, corPrimaria: e.target.value })}
+                            className="sr-only"
+                          />
+                          <div
+                            className="w-20 h-20 rounded-2xl border-2 border-dark-700 group-hover:border-brand-500/50 transition-all shadow-lg"
+                            style={{ backgroundColor: config.corPrimaria }}
+                          />
+                        </label>
+                        <div className="flex-1">
                           <input
                             type="text"
                             value={config.corPrimaria}
                             onChange={(e) => setConfig({ ...config, corPrimaria: e.target.value })}
-                            className="input w-32 font-mono text-sm"
+                            className="input-pro w-36 font-mono text-sm uppercase"
+                            pattern="^#[0-9A-Fa-f]{6}$"
                           />
-                          <FieldHint>Usada em botões e destaques</FieldHint>
+                          <FieldHint>Usada em botões, links e elementos de destaque</FieldHint>
                         </div>
                       </div>
                     </Field>
 
-                    <Field label="Cor Secundária" optional>
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="color"
-                          value={config.corSecundaria}
-                          onChange={(e) =>
-                            setConfig({ ...config, corSecundaria: e.target.value })
-                          }
-                          className="w-16 h-16 rounded-lg border-2 border-dark-700 cursor-pointer"
-                        />
-                        <div>
+                    {/* Cor Secundária */}
+                    <Field label="Cor Secundária">
+                      <div className="flex items-start gap-4">
+                        <label className="cursor-pointer group">
+                          <input
+                            type="color"
+                            value={config.corSecundaria}
+                            onChange={(e) =>
+                              setConfig({ ...config, corSecundaria: e.target.value })
+                            }
+                            className="sr-only"
+                          />
+                          <div
+                            className="w-20 h-20 rounded-2xl border-2 border-dark-700 group-hover:border-brand-500/50 transition-all shadow-lg"
+                            style={{ backgroundColor: config.corSecundaria }}
+                          />
+                        </label>
+                        <div className="flex-1">
                           <input
                             type="text"
                             value={config.corSecundaria}
                             onChange={(e) =>
                               setConfig({ ...config, corSecundaria: e.target.value })
                             }
-                            className="input w-32 font-mono text-sm"
+                            className="input-pro w-36 font-mono text-sm uppercase"
+                            pattern="^#[0-9A-Fa-f]{6}$"
                           />
-                          <FieldHint>Gradientes e elementos visuais</FieldHint>
+                          <FieldHint>Usada em gradientes e elementos visuais</FieldHint>
                         </div>
                       </div>
                     </Field>
 
-                    {/* Paleta sugerida */}
-                    <div className="mt-6 pt-6 border-t border-dark-800">
-                      <h4 className="text-sm font-medium text-white mb-3">Paletas Sugeridas</h4>
-                      <div className="grid grid-cols-4 gap-3">
+                    {/* Paletas Sugeridas */}
+                    <div className="pt-6 border-t border-dark-800">
+                      <h4 className="text-sm font-medium text-white mb-4">Paletas Sugeridas</h4>
+                      <div className="grid grid-cols-2 gap-4">
                         {[
                           { name: 'Indigo', primary: '#6366f1', secondary: '#8b5cf6' },
                           { name: 'Emerald', primary: '#10b981', secondary: '#14b8a6' },
@@ -250,19 +282,19 @@ export default function IdentidadeVisualPage() {
                                 corSecundaria: palette.secondary,
                               })
                             }
-                            className="group"
+                            className="group text-left"
                           >
-                            <div className="flex gap-1 mb-1.5">
+                            <div className="flex gap-2 mb-2">
                               <div
-                                className="w-full h-10 rounded-md"
+                                className="flex-1 h-16 rounded-lg transition-transform group-hover:scale-105"
                                 style={{ backgroundColor: palette.primary }}
                               />
                               <div
-                                className="w-full h-10 rounded-md"
+                                className="flex-1 h-16 rounded-lg transition-transform group-hover:scale-105"
                                 style={{ backgroundColor: palette.secondary }}
                               />
                             </div>
-                            <span className="text-xs text-gray-500 group-hover:text-white transition-colors">
+                            <span className="text-sm text-gray-400 group-hover:text-white transition-colors">
                               {palette.name}
                             </span>
                           </button>
@@ -270,90 +302,78 @@ export default function IdentidadeVisualPage() {
                       </div>
                     </div>
                   </div>
-                </Card>
+                </Section>
               </div>
             )}
 
             {/* Logo & Favicon */}
             {activeTab === 'logo' && (
-              <div className="space-y-6">
-                <Card title="Logo" description="Imagem principal da sua marca">
-                  <div className="space-y-4">
-                    <UploadZone
-                      label="Logo"
-                      accept="image/png,image/jpeg,image/svg+xml"
-                      preview={config.logoUrl}
-                      onChange={handleLogoUpload}
-                      hint="PNG, JPG ou SVG. Recomendado: 512x512px, fundo transparente"
-                    />
-                  </div>
-                </Card>
+              <div className="space-y-8">
+                <Section title="Logo" description="Imagem principal que representa sua marca">
+                  <UploadZone
+                    label="Logo"
+                    accept="image/png,image/jpeg,image/svg+xml"
+                    preview={config.logoUrl}
+                    onChange={handleLogoUpload}
+                    hint="PNG, JPG ou SVG • Recomendado: 512×512px com fundo transparente"
+                  />
+                </Section>
 
-                <Card title="Favicon" description="Ícone que aparece na aba do navegador">
-                  <div className="space-y-4">
-                    <UploadZone
-                      label="Favicon"
-                      accept="image/png,image/x-icon"
-                      preview={config.faviconUrl}
-                      onChange={handleFaviconUpload}
-                      hint="PNG ou ICO. Recomendado: 32x32px ou 64x64px"
-                      small
-                    />
-                  </div>
-                </Card>
-              </div>
-            )}
-
-            {/* Domínio */}
-            {activeTab === 'dominio' && (
-              <div className="space-y-6">
-                <Card
-                  title="Domínio Personalizado"
-                  description="Configure seu domínio próprio (ex: app.suamarca.com)"
+                <Section
+                  title="Favicon"
+                  description="Ícone que aparece na aba do navegador e como atalho"
                 >
-                  <div className="space-y-4">
-                    <Field label="Domínio Atual">
-                      <div className="flex items-center gap-2 px-4 py-3 bg-dark-800 border border-dark-700 rounded-lg">
-                        <Globe className="w-4 h-4 text-gray-500" />
-                        <code className="text-sm text-gray-400">
-                          {config.dominio || 'academia-fit.wazefit.com'}
-                        </code>
-                      </div>
-                    </Field>
-
-                    <div className="p-4 bg-blue-500/5 border border-blue-500/20 rounded-lg">
-                      <div className="flex gap-3">
-                        <AlertCircle className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
-                        <div className="text-sm text-gray-300">
-                          <p className="font-medium text-white mb-1">
-                            Quer usar seu próprio domínio?
-                          </p>
-                          <p>
-                            Acesse <strong>Negócio → Domínios</strong> para configurar um domínio
-                            personalizado como <code>app.suamarca.com</code>
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
+                  <UploadZone
+                    label="Favicon"
+                    accept="image/png,image/x-icon"
+                    preview={config.faviconUrl}
+                    onChange={handleFaviconUpload}
+                    hint="PNG ou ICO • Recomendado: 64×64px"
+                    small
+                  />
+                </Section>
               </div>
             )}
           </main>
 
-          {/* Preview (sticky) */}
-          <aside className="col-span-3">
-            <div className="sticky top-24">
-              <Card title="Preview" description="Como ficará para seus alunos">
-                <div className="space-y-4">
-                  {/* App Header Preview */}
-                  <div className="p-4 bg-dark-900 border border-dark-700 rounded-lg">
-                    <div className="flex items-center gap-3 mb-4">
+          {/* Preview (sticky) — Simulação realista do app */}
+          <aside className="col-span-4">
+            <div className="sticky top-28">
+              <div className="mb-4">
+                <h3 className="text-sm font-semibold text-white mb-1">Preview em Tempo Real</h3>
+                <p className="text-xs text-gray-500">Como seus alunos veem o app</p>
+              </div>
+
+              {/* Mockup de celular */}
+              <div className="bg-dark-900 rounded-3xl p-4 border border-dark-800 shadow-2xl">
+                {/* Barra de status do celular */}
+                <div className="flex items-center justify-between px-6 py-2 text-xs text-gray-500 mb-2">
+                  <span>9:41</span>
+                  <div className="flex items-center gap-1">
+                    <div className="w-4 h-3 border border-current rounded-sm" />
+                    <div className="w-1 h-3 border border-current rounded-sm" />
+                  </div>
+                </div>
+
+                {/* Tela do app */}
+                <div className="bg-dark-950 rounded-2xl overflow-hidden min-h-[600px]">
+                  {/* Header do app */}
+                  <div
+                    className="px-6 py-4 border-b border-dark-800"
+                    style={{
+                      background: `linear-gradient(135deg, ${config.corPrimaria}15, ${config.corSecundaria}15)`,
+                    }}
+                  >
+                    <div className="flex items-center gap-3 mb-3">
                       {config.logoUrl ? (
-                        <img src={config.logoUrl} alt="Logo" className="w-10 h-10 rounded-lg" />
+                        <img
+                          src={config.logoUrl}
+                          alt="Logo"
+                          className="w-12 h-12 rounded-xl object-cover"
+                        />
                       ) : (
                         <div
-                          className="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-white"
+                          className="w-12 h-12 rounded-xl flex items-center justify-center font-bold text-white text-lg shadow-lg"
                           style={{
                             background: `linear-gradient(135deg, ${config.corPrimaria}, ${config.corSecundaria})`,
                           }}
@@ -361,32 +381,91 @@ export default function IdentidadeVisualPage() {
                           {config.nome[0]?.toUpperCase() || 'W'}
                         </div>
                       )}
-                      <div>
-                        <div className="text-sm font-semibold text-white">{config.nome}</div>
+                      <div className="flex-1">
+                        <div className="text-base font-semibold text-white">{config.nome}</div>
                         {config.tagline && (
-                          <div className="text-xs text-gray-500">{config.tagline}</div>
+                          <div className="text-xs text-gray-400 mt-0.5">{config.tagline}</div>
                         )}
                       </div>
                     </div>
-
-                    {/* Button Preview */}
-                    <button
-                      className="w-full py-2.5 rounded-lg font-medium text-white text-sm transition-transform active:scale-95"
-                      style={{ backgroundColor: config.corPrimaria }}
-                    >
-                      Botão Primário
-                    </button>
                   </div>
 
-                  {/* Gradient Preview */}
-                  <div
-                    className="h-32 rounded-lg"
-                    style={{
-                      background: `linear-gradient(135deg, ${config.corPrimaria}, ${config.corSecundaria})`,
-                    }}
-                  />
+                  {/* Conteúdo do app */}
+                  <div className="p-6 space-y-6">
+                    {/* Card de treino */}
+                    <div className="bg-dark-900 rounded-xl p-4 border border-dark-800">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div
+                          className="w-10 h-10 rounded-lg flex items-center justify-center"
+                          style={{ backgroundColor: `${config.corPrimaria}20` }}
+                        >
+                          <Dumbbell className="w-5 h-5" style={{ color: config.corPrimaria }} />
+                        </div>
+                        <div>
+                          <div className="text-sm font-medium text-white">Treino de Hoje</div>
+                          <div className="text-xs text-gray-500">Peito e Tríceps</div>
+                        </div>
+                      </div>
+                      <button
+                        className="w-full py-2.5 rounded-lg font-medium text-white text-sm transition-transform active:scale-95 shadow-lg"
+                        style={{ backgroundColor: config.corPrimaria }}
+                      >
+                        Iniciar Treino
+                      </button>
+                    </div>
+
+                    {/* Card de progresso */}
+                    <div className="bg-dark-900 rounded-xl p-4 border border-dark-800">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="text-sm font-medium text-white">Seu Progresso</div>
+                        <TrendingUp className="w-4 h-4 text-emerald-400" />
+                      </div>
+                      <div className="h-2 bg-dark-800 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full"
+                          style={{
+                            width: '65%',
+                            background: `linear-gradient(90deg, ${config.corPrimaria}, ${config.corSecundaria})`,
+                          }}
+                        />
+                      </div>
+                      <div className="text-xs text-gray-500 mt-2">65% da meta semanal</div>
+                    </div>
+                  </div>
+
+                  {/* Bottom navigation */}
+                  <div className="absolute bottom-0 left-0 right-0 bg-dark-900 border-t border-dark-800 px-6 py-3">
+                    <div className="flex items-center justify-around">
+                      {[
+                        { icon: Home, label: 'Início', active: true },
+                        { icon: Dumbbell, label: 'Treinos', active: false },
+                        { icon: TrendingUp, label: 'Progresso', active: false },
+                        { icon: User, label: 'Perfil', active: false },
+                      ].map((item) => {
+                        const Icon = item.icon
+                        return (
+                          <div key={item.label} className="flex flex-col items-center gap-1">
+                            <Icon
+                              className="w-5 h-5"
+                              style={{
+                                color: item.active ? config.corPrimaria : '#6b7280',
+                              }}
+                            />
+                            <span
+                              className="text-xs"
+                              style={{
+                                color: item.active ? config.corPrimaria : '#6b7280',
+                              }}
+                            >
+                              {item.label}
+                            </span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
                 </div>
-              </Card>
+              </div>
             </div>
           </aside>
         </div>
@@ -399,7 +478,7 @@ export default function IdentidadeVisualPage() {
 // Componentes Auxiliares
 // ═══════════════════════════════════════════════════════════════
 
-function Card({
+function Section({
   title,
   description,
   children,
@@ -409,10 +488,10 @@ function Card({
   children: React.ReactNode
 }) {
   return (
-    <div className="bg-dark-900 border border-dark-800 rounded-xl p-6">
-      <div className="mb-6">
-        <h3 className="text-base font-semibold text-white">{title}</h3>
-        <p className="text-sm text-gray-500 mt-1">{description}</p>
+    <div className="bg-dark-900/50 border border-dark-800/50 rounded-2xl p-8">
+      <div className="mb-8">
+        <h3 className="text-lg font-semibold text-white tracking-tight">{title}</h3>
+        <p className="text-sm text-gray-500 mt-2 leading-relaxed">{description}</p>
       </div>
       {children}
     </div>
@@ -422,20 +501,17 @@ function Card({
 function Field({
   label,
   required,
-  optional,
   children,
 }: {
   label: string
   required?: boolean
-  optional?: boolean
   children: React.ReactNode
 }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-white mb-2">
+      <label className="block text-sm font-medium text-white mb-3">
         {label}
-        {required && <span className="text-red-400 ml-1">*</span>}
-        {optional && <span className="text-gray-600 ml-2 font-normal">(opcional)</span>}
+        {required && <span className="text-red-400 ml-1.5">*</span>}
       </label>
       {children}
     </div>
@@ -443,7 +519,7 @@ function Field({
 }
 
 function FieldHint({ children }: { children: React.ReactNode }) {
-  return <p className="text-xs text-gray-600 mt-1.5">{children}</p>
+  return <p className="text-xs text-gray-600 mt-2 leading-relaxed">{children}</p>
 }
 
 function UploadZone({
@@ -467,28 +543,32 @@ function UploadZone({
         <input type="file" accept={accept} onChange={onChange} className="hidden" />
         <div
           className={`
-          border-2 border-dashed border-dark-700 rounded-lg cursor-pointer
-          hover:border-brand-500/50 hover:bg-dark-800/50 transition-all
-          ${small ? 'p-4' : 'p-8'}
+          border-2 border-dashed border-dark-700 rounded-2xl cursor-pointer
+          hover:border-brand-500/50 hover:bg-dark-800/30 transition-all
+          ${small ? 'p-6' : 'p-10'}
         `}
         >
           {preview ? (
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-6">
               <img
                 src={preview}
                 alt={label}
-                className={`${small ? 'w-16 h-16' : 'w-24 h-24'} rounded-lg object-cover`}
+                className={`${
+                  small ? 'w-20 h-20' : 'w-28 h-28'
+                } rounded-xl object-cover border border-dark-700`}
               />
               <div className="text-left">
-                <p className="text-sm font-medium text-white">Imagem carregada</p>
-                <p className="text-xs text-gray-500 mt-0.5">Clique para trocar</p>
+                <p className="text-sm font-medium text-white mb-1">Imagem carregada</p>
+                <p className="text-xs text-gray-500">Clique para trocar</p>
               </div>
             </div>
           ) : (
             <div className="text-center">
-              <Upload className="w-8 h-8 text-gray-600 mx-auto mb-2" />
-              <p className="text-sm font-medium text-white">Clique para fazer upload</p>
-              <p className="text-xs text-gray-600 mt-1">{hint}</p>
+              <div className="w-12 h-12 bg-dark-800 rounded-xl flex items-center justify-center mx-auto mb-3">
+                <Upload className="w-6 h-6 text-gray-500" />
+              </div>
+              <p className="text-sm font-medium text-white mb-1">Clique para fazer upload</p>
+              <p className="text-xs text-gray-600 leading-relaxed">{hint}</p>
             </div>
           )}
         </div>
