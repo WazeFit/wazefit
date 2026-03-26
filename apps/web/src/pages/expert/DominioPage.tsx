@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Globe, ExternalLink, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Globe, ExternalLink } from 'lucide-react'
 
 export function DominioPage() {
   const [dominio, setDominio] = useState('')
@@ -59,6 +59,15 @@ export function DominioPage() {
 
           {/* Botão verificar */}
           <button
+            onClick={async () => {
+              setVerificando(true)
+              try {
+                // TODO: integrar com API de verificação DNS
+                await new Promise((r) => setTimeout(r, 2000))
+              } finally {
+                setVerificando(false)
+              }
+            }}
             disabled={!dominio || verificando}
             className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
           >
