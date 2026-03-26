@@ -3,7 +3,7 @@
  * Todos os endpoints da Sprint 2 cobertos.
  */
 
-const BASE = 'https://api.wazefit.com'
+const BASE = import.meta.env.VITE_API_URL || 'https://api.wazefit.com'
 
 export class ApiError extends Error {
   status: number
