@@ -336,132 +336,197 @@ export default function IdentidadeVisualPage() {
             )}
           </main>
 
-          {/* Preview (sticky) — Simulação realista do app */}
+          {/* Preview (sticky) — Simulação ULTRA realista */}
           <aside className="col-span-4">
             <div className="sticky top-28">
-              <div className="mb-4">
+              <div className="mb-6">
                 <h3 className="text-sm font-semibold text-white mb-1">Preview em Tempo Real</h3>
-                <p className="text-xs text-gray-500">Como seus alunos veem o app</p>
+                <p className="text-xs text-gray-500">Exatamente como seus alunos veem</p>
               </div>
 
-              {/* Mockup de celular */}
-              <div className="bg-dark-900 rounded-3xl p-4 border border-dark-800 shadow-2xl">
-                {/* Barra de status do celular */}
-                <div className="flex items-center justify-between px-6 py-2 text-xs text-gray-500 mb-2">
-                  <span>9:41</span>
-                  <div className="flex items-center gap-1">
-                    <div className="w-4 h-3 border border-current rounded-sm" />
-                    <div className="w-1 h-3 border border-current rounded-sm" />
-                  </div>
-                </div>
+              {/* Mockup de celular — iPhone style */}
+              <div className="relative mx-auto" style={{ width: '320px' }}>
+                {/* Moldura do celular */}
+                <div className="relative bg-gradient-to-b from-gray-800 to-gray-900 rounded-[3rem] p-3 shadow-2xl">
+                  {/* Notch (entalhe do iPhone) */}
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-gray-900 rounded-b-2xl z-10" />
 
-                {/* Tela do app */}
-                <div className="bg-dark-950 rounded-2xl overflow-hidden min-h-[600px]">
-                  {/* Header do app */}
-                  <div
-                    className="px-6 py-4 border-b border-dark-800"
-                    style={{
-                      background: `linear-gradient(135deg, ${config.corPrimaria}15, ${config.corSecundaria}15)`,
-                    }}
-                  >
-                    <div className="flex items-center gap-3 mb-3">
-                      {config.logoUrl ? (
-                        <img
-                          src={config.logoUrl}
-                          alt="Logo"
-                          className="w-12 h-12 rounded-xl object-cover"
-                        />
-                      ) : (
-                        <div
-                          className="w-12 h-12 rounded-xl flex items-center justify-center font-bold text-white text-lg shadow-lg"
-                          style={{
-                            background: `linear-gradient(135deg, ${config.corPrimaria}, ${config.corSecundaria})`,
-                          }}
-                        >
-                          {config.nome[0]?.toUpperCase() || 'W'}
+                  {/* Tela do celular */}
+                  <div className="bg-dark-950 rounded-[2.5rem] overflow-hidden relative" style={{ height: '650px' }}>
+                    {/* Barra de status */}
+                    <div className="absolute top-0 left-0 right-0 h-12 flex items-center justify-between px-8 text-xs text-gray-400 z-20">
+                      <span className="font-semibold">9:41</span>
+                      <div className="flex items-center gap-1.5">
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
+                        </svg>
+                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        <div className="w-6 h-3 border-2 border-current rounded-sm relative">
+                          <div className="absolute inset-0.5 bg-current rounded-sm" style={{ width: '70%' }} />
                         </div>
-                      )}
-                      <div className="flex-1">
-                        <div className="text-base font-semibold text-white">{config.nome}</div>
-                        {config.tagline && (
-                          <div className="text-xs text-gray-400 mt-0.5">{config.tagline}</div>
-                        )}
                       </div>
                     </div>
-                  </div>
 
-                  {/* Conteúdo do app */}
-                  <div className="p-6 space-y-6">
-                    {/* Card de treino */}
-                    <div className="bg-dark-900 rounded-xl p-4 border border-dark-800">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div
-                          className="w-10 h-10 rounded-lg flex items-center justify-center"
-                          style={{ backgroundColor: `${config.corPrimaria}20` }}
-                        >
-                          <Dumbbell className="w-5 h-5" style={{ color: config.corPrimaria }} />
-                        </div>
-                        <div>
-                          <div className="text-sm font-medium text-white">Treino de Hoje</div>
-                          <div className="text-xs text-gray-500">Peito e Tríceps</div>
-                        </div>
-                      </div>
-                      <button
-                        className="w-full py-2.5 rounded-lg font-medium text-white text-sm transition-transform active:scale-95 shadow-lg"
-                        style={{ backgroundColor: config.corPrimaria }}
+                    {/* Conteúdo scrollável */}
+                    <div className="pt-12 pb-20 h-full overflow-y-auto">
+                      {/* Header do app */}
+                      <div
+                        className="px-5 py-6 border-b border-dark-800/50"
+                        style={{
+                          background: `linear-gradient(135deg, ${config.corPrimaria}12, ${config.corSecundaria}12)`,
+                        }}
                       >
-                        Iniciar Treino
-                      </button>
-                    </div>
-
-                    {/* Card de progresso */}
-                    <div className="bg-dark-900 rounded-xl p-4 border border-dark-800">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="text-sm font-medium text-white">Seu Progresso</div>
-                        <TrendingUp className="w-4 h-4 text-emerald-400" />
-                      </div>
-                      <div className="h-2 bg-dark-800 rounded-full overflow-hidden">
-                        <div
-                          className="h-full rounded-full"
-                          style={{
-                            width: '65%',
-                            background: `linear-gradient(90deg, ${config.corPrimaria}, ${config.corSecundaria})`,
-                          }}
-                        />
-                      </div>
-                      <div className="text-xs text-gray-500 mt-2">65% da meta semanal</div>
-                    </div>
-                  </div>
-
-                  {/* Bottom navigation */}
-                  <div className="absolute bottom-0 left-0 right-0 bg-dark-900 border-t border-dark-800 px-6 py-3">
-                    <div className="flex items-center justify-around">
-                      {[
-                        { icon: Home, label: 'Início', active: true },
-                        { icon: Dumbbell, label: 'Treinos', active: false },
-                        { icon: TrendingUp, label: 'Progresso', active: false },
-                        { icon: User, label: 'Perfil', active: false },
-                      ].map((item) => {
-                        const Icon = item.icon
-                        return (
-                          <div key={item.label} className="flex flex-col items-center gap-1">
-                            <Icon
-                              className="w-5 h-5"
-                              style={{
-                                color: item.active ? config.corPrimaria : '#6b7280',
-                              }}
+                        <div className="flex items-center gap-3">
+                          {config.logoUrl ? (
+                            <img
+                              src={config.logoUrl}
+                              alt="Logo"
+                              className="w-14 h-14 rounded-2xl object-cover shadow-lg"
                             />
-                            <span
-                              className="text-xs"
+                          ) : (
+                            <div
+                              className="w-14 h-14 rounded-2xl flex items-center justify-center font-bold text-white text-xl shadow-lg"
                               style={{
-                                color: item.active ? config.corPrimaria : '#6b7280',
+                                background: `linear-gradient(135deg, ${config.corPrimaria}, ${config.corSecundaria})`,
                               }}
                             >
-                              {item.label}
-                            </span>
+                              {config.nome[0]?.toUpperCase() || 'W'}
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="text-base font-bold text-white truncate">
+                              {config.nome}
+                            </div>
+                            {config.tagline && (
+                              <div className="text-xs text-gray-400 mt-0.5 truncate">
+                                {config.tagline}
+                              </div>
+                            )}
                           </div>
-                        )
-                      })}
+                        </div>
+                      </div>
+
+                      {/* Conteúdo do app */}
+                      <div className="p-5 space-y-5">
+                        {/* Saudação */}
+                        <div>
+                          <h2 className="text-lg font-bold text-white">Olá, João! 👋</h2>
+                          <p className="text-sm text-gray-400 mt-1">
+                            Pronto para treinar hoje?
+                          </p>
+                        </div>
+
+                        {/* Card de treino — DESTAQUE */}
+                        <div
+                          className="rounded-2xl p-5 border shadow-xl"
+                          style={{
+                            background: `linear-gradient(135deg, ${config.corPrimaria}15, ${config.corSecundaria}08)`,
+                            borderColor: `${config.corPrimaria}30`,
+                          }}
+                        >
+                          <div className="flex items-start gap-4 mb-4">
+                            <div
+                              className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg"
+                              style={{
+                                backgroundColor: config.corPrimaria,
+                              }}
+                            >
+                              <Dumbbell className="w-6 h-6 text-white" />
+                            </div>
+                            <div className="flex-1">
+                              <div className="text-sm font-bold text-white">Treino de Hoje</div>
+                              <div className="text-xs text-gray-400 mt-0.5">
+                                Peito e Tríceps • 45 min
+                              </div>
+                            </div>
+                          </div>
+                          <button
+                            className="w-full py-3 rounded-xl font-semibold text-white text-sm shadow-lg transition-all hover:scale-[1.02] active:scale-95"
+                            style={{
+                              background: `linear-gradient(135deg, ${config.corPrimaria}, ${config.corSecundaria})`,
+                            }}
+                          >
+                            Iniciar Treino
+                          </button>
+                        </div>
+
+                        {/* Card de progresso */}
+                        <div className="bg-dark-900/50 rounded-2xl p-5 border border-dark-800">
+                          <div className="flex items-center justify-between mb-4">
+                            <div>
+                              <div className="text-sm font-bold text-white">Seu Progresso</div>
+                              <div className="text-xs text-gray-500 mt-0.5">Esta semana</div>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-emerald-400">
+                              <TrendingUp className="w-4 h-4" />
+                              <span className="text-xs font-semibold">+12%</span>
+                            </div>
+                          </div>
+                          <div className="h-3 bg-dark-800 rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full transition-all duration-500 shadow-lg"
+                              style={{
+                                width: '65%',
+                                background: `linear-gradient(90deg, ${config.corPrimaria}, ${config.corSecundaria})`,
+                                boxShadow: `0 0 12px ${config.corPrimaria}60`,
+                              }}
+                            />
+                          </div>
+                          <div className="flex items-center justify-between mt-3">
+                            <span className="text-xs text-gray-500">3 de 5 treinos</span>
+                            <span className="text-xs font-semibold text-white">65%</span>
+                          </div>
+                        </div>
+
+                        {/* Cards de stats */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="bg-dark-900/50 rounded-xl p-4 border border-dark-800">
+                            <div className="text-2xl font-bold text-white mb-1">127</div>
+                            <div className="text-xs text-gray-500">Treinos feitos</div>
+                          </div>
+                          <div className="bg-dark-900/50 rounded-xl p-4 border border-dark-800">
+                            <div className="text-2xl font-bold text-white mb-1">8.2kg</div>
+                            <div className="text-xs text-gray-500">Peso perdido</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Bottom navigation — FIXO */}
+                    <div className="absolute bottom-0 left-0 right-0 bg-dark-900/95 backdrop-blur-xl border-t border-dark-800/50 px-5 py-3 safe-area-bottom">
+                      <div className="flex items-center justify-around">
+                        {[
+                          { icon: Home, label: 'Início', active: true },
+                          { icon: Dumbbell, label: 'Treinos', active: false },
+                          { icon: TrendingUp, label: 'Progresso', active: false },
+                          { icon: User, label: 'Perfil', active: false },
+                        ].map((item) => {
+                          const Icon = item.icon
+                          return (
+                            <button
+                              key={item.label}
+                              className="flex flex-col items-center gap-1 transition-transform active:scale-90"
+                            >
+                              <Icon
+                                className="w-5 h-5 transition-colors"
+                                style={{
+                                  color: item.active ? config.corPrimaria : '#6b7280',
+                                }}
+                              />
+                              <span
+                                className="text-xs font-medium transition-colors"
+                                style={{
+                                  color: item.active ? config.corPrimaria : '#6b7280',
+                                }}
+                              >
+                                {item.label}
+                              </span>
+                            </button>
+                          )
+                        })}
+                      </div>
                     </div>
                   </div>
                 </div>
