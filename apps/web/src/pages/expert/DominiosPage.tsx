@@ -143,12 +143,12 @@ export function DominiosPage() {
                         </div>
                         <div className="flex gap-2 text-xs">
                           <span className="text-gray-500 w-16">Destino:</span>
-                          <code className="text-emerald-400 font-mono">wazefit.pages.dev</code>
+                          <code className="text-emerald-400 font-mono">wazefit.com</code>
                         </div>
                       </div>
                       <p className="text-gray-500 text-xs mt-2">
                         💡 <strong>Importante:</strong> O destino deve ser exatamente{' '}
-                        <code className="bg-dark-700 px-1 py-0.5 rounded">wazefit.pages.dev</code>
+                        <code className="bg-dark-700 px-1 py-0.5 rounded">wazefit.com</code>
                       </p>
                     </div>
                   </li>
