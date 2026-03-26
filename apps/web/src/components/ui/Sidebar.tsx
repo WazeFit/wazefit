@@ -20,6 +20,7 @@ import {
   ChevronDown,
   Shield,
   Globe,
+  Palette,
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -64,6 +65,7 @@ const NAV_ITEMS: NavItem[] = [
   
   // Config
   { label: 'Domínios', icon: Globe, href: '/expert/dominios', section: 'Config' },
+  { label: 'Identidade Visual', icon: Palette, href: '/expert/whitelabel', section: 'Config' },
   { label: 'Configurações', icon: Settings, href: '/expert/config', section: 'Config' },
 ]
 
