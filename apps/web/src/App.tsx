@@ -33,7 +33,7 @@ import { NutricaoPage } from './pages/expert/NutricaoPage'
 import { AvaliacoesPage } from './pages/expert/AvaliacoesPage'
 import { ConfigPage } from './pages/expert/ConfigPage'
 import { DominiosPage } from './pages/expert/DominiosPage'
-import { WhiteLabelPage } from './pages/expert/WhiteLabelPage'
+import IdentidadeVisualPage from './pages/expert/IdentidadeVisualPage'
 import AnalyticsPage from './pages/expert/AnalyticsPage'
 
 // Admin pages
@@ -189,7 +189,7 @@ function AppInner() {
         {appPath === '/expert/avaliacoes' && <AvaliacoesPage />}
         {appPath === '/expert/analytics' && <AnalyticsPage />}
         {appPath === '/expert/dominios' && <DominiosPage />}
-        {appPath === '/expert/whitelabel' && <WhiteLabelPage />}
+        {appPath === '/expert/identidade' && <IdentidadeVisualPage />}
         {appPath === '/expert/config' && <ConfigPage />}
         {appPath === '/admin/dashboard' && user.role === 'admin' && <AdminDashboardPage />}
       </ExpertLayout>
