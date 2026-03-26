@@ -189,4 +189,41 @@ tenantRouter.get('/branding-by-host', async (c) => {
   })
 })
 
+// ── Lookup público: domínio → tenant slug ──
+// GET /api/v1/tenant/lookup?domain=app.minhaacademia.com
+tenantRouter.get('/lookup', async c => {
+  const domain = c.req.query('domain')
+  if (!domain) {
+    return c.json({ error: 'Query param "domain" obrigatório' }, 400)
+  }
+
+  const db = createDB(c.env.DB)
+
+  // Busca domínio custom ativo
+  const dominio = await db
+    .select({
+      tenantId: dominiosTenant.tenantId,
+    })
+    .from(dominiosTenant)
+    .where(and(eq(dominiosTenant.dominio, domain), eq(dominiosTenant.status, 'active')))
+    .limit(1)
+
+  if (dominio.length === 0) {
+    return c.json({ error: 'Domínio não encontrado ou inativo' }, 404)
+  }
+
+  // Busca tenant
+  const tenant = await db
+    .select({ slug: tenants.slug })
+    .from(tenants)
+    .where(eq(tenants.id, dominio[0].tenantId))
+    .limit(1)
+
+  if (tenant.length === 0) {
+    return c.json({ error: 'Tenant não encontrado' }, 404)
+  }
+
+  return c.json({ slug: tenant[0].slug })
+})
+
 export { tenantRouter }

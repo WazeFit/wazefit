@@ -19,6 +19,7 @@ import {
   LogOut,
   ChevronDown,
   Shield,
+  Globe,
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -62,6 +63,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Gerar com IA', icon: Sparkles, href: '/expert/gerar-ia', section: 'IA' },
   
   // Config
+  { label: 'Domínios', icon: Globe, href: '/expert/dominios', section: 'Config' },
   { label: 'Configurações', icon: Settings, href: '/expert/config', section: 'Config' },
 ]
 

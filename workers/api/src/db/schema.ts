@@ -549,6 +549,7 @@ export const dominiosTenant = sqliteTable(
       .default('pending'),
     verificado_em: text('verificado_em'),
     ssl_status: text('ssl_status', { enum: ['pending', 'active', 'failed'] }).default('pending'),
+    cloudflare_dns_id: text('cloudflare_dns_id'), // ID do DNS record no Cloudflare
     criado_em: text('criado_em').notNull().default(now),
     atualizado_em: text('atualizado_em').notNull().default(now),
     deletado_em: text('deletado_em'),

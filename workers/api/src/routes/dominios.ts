@@ -48,12 +48,51 @@ dominiosRouter.post('/', zValidator('json', createDominioSchema), async (c) => {
   const id = generateId()
   const timestamp = now()
 
+  // Criar DNS record automaticamente no Cloudflare
+  const ZONE_ID = '070a9f917db2f62e9a27e05dee1122b8' // wazefit.com zone
+  const CF_API_TOKEN = c.env.CLOUDFLARE_API_TOKEN || ''
+
+  let dnsRecordId: string | null = null
+  let status: 'pending' | 'active' = 'pending'
+
+  if (CF_API_TOKEN) {
+    try {
+      // Criar CNAME record apontando pro Pages
+      const dnsRes = await fetch(`https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${CF_API_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'CNAME',
+          name: dominio,
+          content: 'wazefit.pages.dev',
+          proxied: true,
+          ttl: 1, // Auto
+        }),
+      })
+
+      const dnsData = await dnsRes.json() as { success: boolean; result?: { id: string } }
+
+      if (dnsData.success && dnsData.result) {
+        dnsRecordId = dnsData.result.id
+        status = 'active' // DNS criado automaticamente
+      }
+    } catch (err) {
+      console.error('Erro ao criar DNS record:', err)
+      // Continua com status pending se falhar
+    }
+  }
+
   await db.insert(dominiosTenant).values({
     id,
     tenant_id: tenantId,
     dominio,
-    status: 'pending',
-    ssl_status: 'pending',
+    status,
+    ssl_status: status === 'active' ? 'active' : 'pending',
+    verificado_em: status === 'active' ? timestamp : null,
+    cloudflare_dns_id: dnsRecordId,
     criado_em: timestamp,
     atualizado_em: timestamp,
   })
@@ -62,9 +101,11 @@ dominiosRouter.post('/', zValidator('json', createDominioSchema), async (c) => {
     {
       id,
       dominio,
-      status: 'pending',
-      ssl_status: 'pending',
-      message: 'Domínio registrado. Configure CNAME apontando para wazefit.com e execute verificação.',
+      status,
+      ssl_status: status === 'active' ? 'active' : 'pending',
+      message: status === 'active' 
+        ? 'Domínio configurado e ativo! Já pode acessar.' 
+        : 'Domínio registrado. Aguardando propagação DNS.',
     },
     201,
   )
@@ -101,7 +142,10 @@ dominiosRouter.delete('/:id', async (c) => {
   const db = createDB(c.env.DB)
 
   const existing = await db
-    .select({ id: dominiosTenant.id })
+    .select({ 
+      id: dominiosTenant.id,
+      cloudflare_dns_id: dominiosTenant.cloudflare_dns_id,
+    })
     .from(dominiosTenant)
     .where(
       and(
@@ -114,6 +158,29 @@ dominiosRouter.delete('/:id', async (c) => {
 
   if (!existing) {
     return c.json({ error: 'Domínio não encontrado.', code: 404 }, 404)
+  }
+
+  // Remover DNS record do Cloudflare se existir
+  if (existing.cloudflare_dns_id) {
+    const ZONE_ID = '070a9f917db2f62e9a27e05dee1122b8'
+    const CF_API_TOKEN = c.env.CLOUDFLARE_API_TOKEN || ''
+
+    if (CF_API_TOKEN) {
+      try {
+        await fetch(
+          `https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records/${existing.cloudflare_dns_id}`,
+          {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${CF_API_TOKEN}`,
+            },
+          }
+        )
+      } catch (err) {
+        console.error('Erro ao remover DNS record:', err)
+        // Continua mesmo se falhar
+      }
+    }
   }
 
   await db

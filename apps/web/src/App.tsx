@@ -7,6 +7,7 @@ import { checkSession, logout as doLogout } from './stores/auth'
 import type { User, Tenant } from './stores/auth'
 import { ToastProvider } from './components/ui/Toast'
 import { TenantProvider } from './contexts/TenantContext'
+import { useTenantDetection } from './hooks/useTenantDetection'
 
 // Auth
 import { LoginPage } from './pages/auth/LoginPage'
@@ -31,6 +32,7 @@ import { GerarIAPage } from './pages/expert/GerarIAPage'
 import { NutricaoPage } from './pages/expert/NutricaoPage'
 import { AvaliacoesPage } from './pages/expert/AvaliacoesPage'
 import { ConfigPage } from './pages/expert/ConfigPage'
+import { DominiosPage } from './pages/expert/DominiosPage'
 import AnalyticsPage from './pages/expert/AnalyticsPage'
 
 // Admin pages
@@ -50,6 +52,9 @@ function AppInner() {
   const [user, setUser] = useState<User | null>(null)
   const [tenant, setTenant] = useState<Tenant | null>(null)
   const [appPath, setAppPath] = useState('/dashboard')
+  
+  // ── Detecção automática de tenant ──
+  const { slug: detectedSlug } = useTenantDetection()
 
   // ── Inicialização ──
   useEffect(() => {
@@ -132,6 +137,11 @@ function AppInner() {
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-3 border-brand-500 border-t-transparent rounded-full animate-spin" />
           <p className="text-gray-400 text-sm">Carregando...</p>
+          {detectedSlug && (
+            <p className="text-xs text-gray-500 mt-2">
+              Tenant: <span className="text-brand-400 font-mono">{detectedSlug}</span>
+            </p>
+          )}
         </div>
       </div>
     )
@@ -177,6 +187,7 @@ function AppInner() {
         {appPath === '/expert/nutricao' && <NutricaoPage />}
         {appPath === '/expert/avaliacoes' && <AvaliacoesPage />}
         {appPath === '/expert/analytics' && <AnalyticsPage />}
+        {appPath === '/expert/dominios' && <DominiosPage />}
         {appPath === '/expert/config' && <ConfigPage />}
         {appPath === '/admin/dashboard' && user.role === 'admin' && <AdminDashboardPage />}
       </ExpertLayout>

@@ -54,3 +54,4 @@ queue = "wazefit-webhooks"
 
 [vars]
 ENVIRONMENT = "production"
+CLOUDFLARE_API_TOKEN = "1gVm1ONLbaHVMALMbqmZV3Estyqx6Ipr01GaRIU4"

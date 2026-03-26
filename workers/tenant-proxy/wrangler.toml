@@ -1,0 +1,12 @@
+name = "wazefit-tenant-proxy"
+main = "src/index.ts"
+compatibility_date = "2024-12-30"
+
+# ── Routes ──
+# Captura TODOS os subdomínios *.wazefit.com
+routes = [
+  { pattern = "*.wazefit.com/*", zone_name = "wazefit.com" }
+]
+
+[vars]
+ENVIRONMENT = "production"
