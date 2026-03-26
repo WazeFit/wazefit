@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { api, ApiError } from '../../lib/api'
+import { ApiError } from '../../lib/api'
 import { Button } from '../../components/ui/Button'
 import { Card, CardBody } from '../../components/ui/Card'
 import { PageLoader } from '../../components/ui/LoadingSpinner'
