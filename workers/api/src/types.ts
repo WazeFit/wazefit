@@ -27,6 +27,7 @@ export interface Env {
   ANTHROPIC_API_KEY: string
   SENDGRID_API_KEY: string
   ADMIN_SECRET: string
+  CLOUDFLARE_API_TOKEN: string
 
   // ── Variáveis ──
   ENVIRONMENT: string

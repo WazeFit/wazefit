@@ -202,7 +202,7 @@ tenantRouter.get('/lookup', async c => {
   // Busca domínio custom ativo
   const dominio = await db
     .select({
-      tenantId: dominiosTenant.tenantId,
+      tenantId: dominiosTenant.tenant_id,
     })
     .from(dominiosTenant)
     .where(and(eq(dominiosTenant.dominio, domain), eq(dominiosTenant.status, 'active')))
