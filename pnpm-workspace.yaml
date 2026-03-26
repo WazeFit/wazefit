@@ -2,4 +2,3 @@ packages:
   - "apps/*"
   - "workers/*"
   - "packages/*"
-  - "workers/tenant-proxy"
