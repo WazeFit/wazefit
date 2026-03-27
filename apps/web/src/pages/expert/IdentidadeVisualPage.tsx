@@ -1,18 +1,20 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Upload, Palette, Eye, Check, Dumbbell, Home, TrendingUp, User } from 'lucide-react'
+import { api, ApiError } from '../../lib/api'
 
 /**
  * Página de Identidade Visual — 100% Profissional
  * Inspiração: Stripe, Vercel, Linear, Notion
  * 
- * Melhorias v2:
- * - Removido tab "Domínio" (não faz parte de identidade visual)
- * - Preview realista simulando app real do aluno
- * - Layout mais limpo e espaçado
- * - Tipografia melhorada
+ * Conectado com API real:
+ * - GET /api/v1/tenant/config → carrega configurações
+ * - PUT /api/v1/tenant/config → salva cores/nome/tagline
+ * - POST /api/v1/tenant/branding/upload → upload logo/favicon
  */
 
 type Tab = 'geral' | 'cores' | 'logo'
+
+const BASE = import.meta.env.VITE_API_URL || 'https://api.wazefit.com'
 
 interface BrandConfig {
   nome: string
@@ -26,8 +28,8 @@ interface BrandConfig {
 export default function IdentidadeVisualPage() {
   const [activeTab, setActiveTab] = useState<Tab>('geral')
   const [config, setConfig] = useState<BrandConfig>({
-    nome: 'Minha Academia',
-    tagline: 'Transforme seu corpo, transforme sua vida',
+    nome: '',
+    tagline: '',
     corPrimaria: '#6366f1',
     corSecundaria: '#8b5cf6',
     logoUrl: null,
@@ -35,45 +37,123 @@ export default function IdentidadeVisualPage() {
   })
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [loaded, setLoaded] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  // Auto-save (debounced)
+  // Carregar config da API
   useEffect(() => {
+    async function load() {
+      try {
+        const data = await api.tenant.config()
+        const cfg = data.config || {}
+        setConfig({
+          nome: cfg.nome_exibicao || '',
+          tagline: cfg.descricao || '',
+          corPrimaria: cfg.cor_primaria || '#6366f1',
+          corSecundaria: cfg.cor_secundaria || '#8b5cf6',
+          logoUrl: cfg.logo_url ? (cfg.logo_url.startsWith('/') ? `${BASE}${cfg.logo_url}` : cfg.logo_url) : null,
+          faviconUrl: cfg.favicon_url ? (cfg.favicon_url.startsWith('/') ? `${BASE}${cfg.favicon_url}` : cfg.favicon_url) : null,
+        })
+        setLoaded(true)
+      } catch (err) {
+        setError(err instanceof ApiError ? err.message : 'Erro ao carregar configurações')
+        setLoaded(true)
+      }
+    }
+    load()
+  }, [])
+
+  const handleSave = useCallback(async () => {
+    if (saving) return
+    setSaving(true)
+    setError(null)
+    try {
+      await api.tenant.updateConfig({
+        nome_exibicao: config.nome,
+        descricao: config.tagline,
+        cor_primaria: config.corPrimaria,
+        cor_secundaria: config.corSecundaria,
+      })
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Erro ao salvar')
+    } finally {
+      setSaving(false)
+    }
+  }, [config, saving])
+
+  // Auto-save debounced (somente após carregamento inicial)
+  useEffect(() => {
+    if (!loaded) return
+    setSaved(false)
     const timer = setTimeout(() => {
-      if (saved) return
       handleSave()
     }, 2000)
     return () => clearTimeout(timer)
-  }, [config])
+  }, [config.nome, config.tagline, config.corPrimaria, config.corSecundaria])
 
-  const handleSave = async () => {
-    setSaving(true)
-    // TODO: API call
-    await new Promise((r) => setTimeout(r, 500))
-    setSaving(false)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+  async function uploadBranding(file: File, tipo: 'logo' | 'favicon') {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('tipo', tipo)
+
+    const token = localStorage.getItem('wf_token')
+    const res = await fetch(`${BASE}/api/v1/tenant/branding/upload`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    })
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({ error: `HTTP ${res.status}` }))
+      throw new ApiError(res.status, data)
+    }
+
+    const data = await res.json() as { url: string }
+    return data.url.startsWith('/') ? `${BASE}${data.url}` : data.url
   }
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
-    const reader = new FileReader()
-    reader.onload = () => {
-      setConfig({ ...config, logoUrl: reader.result as string })
+    try {
+      setSaving(true)
+      const url = await uploadBranding(file, 'logo')
+      setConfig({ ...config, logoUrl: url })
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Erro ao enviar logo')
+    } finally {
+      setSaving(false)
     }
-    reader.readAsDataURL(file)
   }
 
-  const handleFaviconUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFaviconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
-    const reader = new FileReader()
-    reader.onload = () => {
-      setConfig({ ...config, faviconUrl: reader.result as string })
+    try {
+      setSaving(true)
+      const url = await uploadBranding(file, 'favicon')
+      setConfig({ ...config, faviconUrl: url })
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Erro ao enviar favicon')
+    } finally {
+      setSaving(false)
     }
-    reader.readAsDataURL(file)
+  }
+
+  if (!loaded) {
+    return (
+      <div className="min-h-screen bg-dark-950 flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
   }
 
   return (
@@ -92,6 +172,11 @@ export default function IdentidadeVisualPage() {
 
           {/* Save indicator */}
           <div className="flex items-center gap-3">
+            {error && (
+              <span className="text-xs text-red-400 flex items-center gap-2 px-3 py-1.5 bg-red-500/10 rounded-full">
+                ⚠️ {error}
+              </span>
+            )}
             {saving && (
               <span className="text-xs text-gray-400 flex items-center gap-2 px-3 py-1.5 bg-dark-800 rounded-full">
                 <div className="w-1.5 h-1.5 bg-brand-400 rounded-full animate-pulse" />
@@ -397,7 +482,7 @@ export default function IdentidadeVisualPage() {
                           )}
                           <div className="flex-1 min-w-0">
                             <div className="text-base font-bold text-white truncate">
-                              {config.nome}
+                              {config.nome || 'Minha Academia'}
                             </div>
                             {config.tagline && (
                               <div className="text-xs text-gray-400 mt-0.5 truncate">

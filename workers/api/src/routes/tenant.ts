@@ -1,9 +1,12 @@
 /**
  * Rotas de configuração do tenant (white label).
  *
- * GET  /api/v1/tenant/config   — Retornar configurações (auth)
- * PUT  /api/v1/tenant/config   — Atualizar configurações (expert only)
- * GET  /api/v1/tenant/branding — Branding público (sem auth, para PWA)
+ * GET  /api/v1/tenant/config           — Retornar configurações (auth)
+ * PUT  /api/v1/tenant/config           — Atualizar configurações (expert only)
+ * POST /api/v1/tenant/branding/upload  — Upload logo/favicon para R2 (expert only)
+ * GET  /api/v1/tenant/branding         — Branding público (sem auth, para PWA)
+ * GET  /api/v1/tenant/branding-by-host — Branding público por hostname (sem auth)
+ * GET  /api/v1/tenant/lookup           — Lookup domínio → slug
  */
 import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
@@ -16,6 +19,81 @@ import { generateId, now } from '../lib/id'
 import { authMiddleware, expertOnly } from '../middleware/auth'
 
 const tenantRouter = new Hono<{ Bindings: Env; Variables: AuthVariables }>()
+
+// ── Upload branding (logo / favicon) para R2 ──
+
+const MAX_LOGO_SIZE = 2 * 1024 * 1024   // 2 MB
+const MAX_FAVICON_SIZE = 512 * 1024       // 512 KB
+const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/svg+xml', 'image/webp', 'image/x-icon', 'image/vnd.microsoft.icon']
+
+// POST /tenant/branding/upload — Upload logo ou favicon para R2 (expert only)
+tenantRouter.post('/branding/upload', authMiddleware, expertOnly, async (c) => {
+  const tenantId = c.get('tenant_id')
+
+  if (!c.env.R2_PRIVATE) {
+    return c.json({ error: 'Storage não configurado.', code: 503 }, 503)
+  }
+
+  const formData = await c.req.formData()
+  const tipo = formData.get('tipo') as string | null // 'logo' ou 'favicon'
+  const file = formData.get('file') as File | null
+
+  if (!tipo || !['logo', 'favicon'].includes(tipo)) {
+    return c.json({ error: 'Tipo deve ser "logo" ou "favicon".', code: 400 }, 400)
+  }
+
+  if (!file || !(file instanceof File)) {
+    return c.json({ error: 'Arquivo não enviado.', code: 400 }, 400)
+  }
+
+  // Validar content type
+  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+    return c.json({ error: `Tipo de arquivo não permitido: ${file.type}`, code: 400 }, 400)
+  }
+
+  // Validar tamanho
+  const maxSize = tipo === 'logo' ? MAX_LOGO_SIZE : MAX_FAVICON_SIZE
+  if (file.size > maxSize) {
+    return c.json({
+      error: `Arquivo muito grande. Máximo: ${tipo === 'logo' ? '2MB' : '512KB'}`,
+      code: 413,
+    }, 413)
+  }
+
+  // Gerar key e upload para R2
+  const ext = file.name.split('.').pop()?.toLowerCase() || 'png'
+  const fileId = generateId()
+  const key = `${tenantId}/branding/${tipo}-${fileId}.${ext}`
+
+  const buffer = await file.arrayBuffer()
+  await c.env.R2_PRIVATE.put(key, buffer, {
+    httpMetadata: { contentType: file.type },
+  })
+
+  // Construir URL pública (via media proxy ou R2 public)
+  const publicUrl = `/api/v1/media/file/${key}`
+
+  // Salvar na tenant_config
+  const db = createDB(c.env.DB)
+  const chave = tipo === 'logo' ? 'logo_url' : 'favicon_url'
+  const timestamp = now()
+
+  const existing = await db.select({ id: tenantConfig.id }).from(tenantConfig)
+    .where(and(eq(tenantConfig.tenant_id, tenantId), eq(tenantConfig.chave, chave))).get()
+
+  if (existing) {
+    await db.update(tenantConfig)
+      .set({ valor: publicUrl, atualizado_em: timestamp })
+      .where(eq(tenantConfig.id, existing.id))
+  } else {
+    await db.insert(tenantConfig).values({
+      id: generateId(), tenant_id: tenantId, chave,
+      valor: publicUrl, criado_em: timestamp, atualizado_em: timestamp,
+    })
+  }
+
+  return c.json({ url: publicUrl, tipo, key })
+})
 
 const BRANDING_KEYS = [
   'cor_primaria',

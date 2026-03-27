@@ -198,4 +198,44 @@ mediaRouter.put('/upload/*', async (c) => {
   })
 })
 
+// ═══════════════════════════════════════════════════════════════
+// GET /media/file/* — Servir arquivo do R2 (público para branding)
+// ═══════════════════════════════════════════════════════════════
+mediaRouter.get('/file/*', async (c) => {
+  if (!c.env.R2_PRIVATE) {
+    return c.json({ error: 'Storage não configurado.', code: 503 }, 503)
+  }
+
+  const url = new URL(c.req.url)
+  const key = url.pathname.replace(/^\/api\/v1\/media\/file\//, '')
+
+  if (!key) {
+    return c.json({ error: 'Key não informada.', code: 400 }, 400)
+  }
+
+  // Branding files são públicos (logo/favicon)
+  const isBranding = key.includes('/branding/')
+
+  // Arquivos não-branding requerem auth
+  if (!isBranding) {
+    // Verificar auth header
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader) {
+      return c.json({ error: 'Não autorizado.', code: 401 }, 401)
+    }
+  }
+
+  const obj = await c.env.R2_PRIVATE.get(key)
+  if (!obj) {
+    return c.json({ error: 'Arquivo não encontrado.', code: 404 }, 404)
+  }
+
+  const headers = new Headers()
+  headers.set('Content-Type', obj.httpMetadata?.contentType ?? 'application/octet-stream')
+  headers.set('Cache-Control', isBranding ? 'public, max-age=86400' : 'private, max-age=3600')
+  headers.set('ETag', obj.etag)
+
+  return new Response(obj.body, { headers })
+})
+
 export { mediaRouter }

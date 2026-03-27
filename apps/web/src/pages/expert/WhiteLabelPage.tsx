@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { ApiError } from '../../lib/api'
+import { api, ApiError } from '../../lib/api'
 import { Button } from '../../components/ui/Button'
 import { Card, CardBody } from '../../components/ui/Card'
 import { PageLoader } from '../../components/ui/LoadingSpinner'
@@ -10,8 +10,11 @@ interface WhiteLabelConfig {
   favicon_url?: string
   cor_primaria?: string
   cor_secundaria?: string
-  nome_plataforma?: string
+  nome_exibicao?: string
+  descricao?: string
 }
+
+const BASE = import.meta.env.VITE_API_URL || 'https://api.wazefit.com'
 
 export function WhiteLabelPage() {
   const { toast } = useToast()
@@ -20,7 +23,8 @@ export function WhiteLabelPage() {
   const [config, setConfig] = useState<WhiteLabelConfig>({
     cor_primaria: '#FF6B35',
     cor_secundaria: '#004E89',
-    nome_plataforma: 'WazeFit',
+    nome_exibicao: '',
+    descricao: '',
   })
 
   const [logoFile, setLogoFile] = useState<File | null>(null)
@@ -34,9 +38,18 @@ export function WhiteLabelPage() {
 
   async function load() {
     try {
-      // TODO: Endpoint GET /api/tenant/whitelabel
-      // const data = await api.get('/tenant/whitelabel')
-      // setConfig(data)
+      const data = await api.tenant.config()
+      const cfg = data.config || {}
+      setConfig({
+        cor_primaria: cfg.cor_primaria || '#FF6B35',
+        cor_secundaria: cfg.cor_secundaria || '#004E89',
+        nome_exibicao: cfg.nome_exibicao || '',
+        descricao: cfg.descricao || '',
+        logo_url: cfg.logo_url || undefined,
+        favicon_url: cfg.favicon_url || undefined,
+      })
+      if (cfg.logo_url) setLogoPreview(cfg.logo_url.startsWith('/') ? `${BASE}${cfg.logo_url}` : cfg.logo_url)
+      if (cfg.favicon_url) setFaviconPreview(cfg.favicon_url.startsWith('/') ? `${BASE}${cfg.favicon_url}` : cfg.favicon_url)
       setLoading(false)
     } catch (err) {
       toast('error', err instanceof ApiError ? err.message : 'Erro ao carregar configurações')
@@ -84,20 +97,46 @@ export function WhiteLabelPage() {
     reader.readAsDataURL(file)
   }
 
+  async function uploadFile(file: File, tipo: 'logo' | 'favicon'): Promise<string | null> {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('tipo', tipo)
+
+    const token = localStorage.getItem('wf_token')
+    const res = await fetch(`${BASE}/api/v1/tenant/branding/upload`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    })
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({ error: `HTTP ${res.status}` }))
+      throw new ApiError(res.status, data)
+    }
+
+    const data = await res.json() as { url: string }
+    return data.url
+  }
+
   async function handleSave() {
     setSaving(true)
     try {
-      const formData = new FormData()
-      
-      if (logoFile) formData.append('logo', logoFile)
-      if (faviconFile) formData.append('favicon', faviconFile)
-      formData.append('cor_primaria', config.cor_primaria || '')
-      formData.append('cor_secundaria', config.cor_secundaria || '')
-      formData.append('nome_plataforma', config.nome_plataforma || '')
+      // Upload de arquivos primeiro (se houver)
+      if (logoFile) {
+        await uploadFile(logoFile, 'logo')
+      }
+      if (faviconFile) {
+        await uploadFile(faviconFile, 'favicon')
+      }
 
-      // TODO: Endpoint POST /api/tenant/whitelabel
-      // await api.post('/tenant/whitelabel', formData)
-      
+      // Salvar configs de texto/cores
+      await api.tenant.updateConfig({
+        cor_primaria: config.cor_primaria,
+        cor_secundaria: config.cor_secundaria,
+        nome_exibicao: config.nome_exibicao,
+        descricao: config.descricao,
+      })
+
       toast('success', '✅ Configurações salvas! Recarregue a página para ver as mudanças.')
       setLogoFile(null)
       setFaviconFile(null)
@@ -125,20 +164,20 @@ export function WhiteLabelPage() {
       <Card className="bg-gradient-to-br from-brand-500/10 to-purple-500/10 border-brand-500/20">
         <CardBody>
           <h2 className="font-semibold text-white mb-4">👀 Preview</h2>
-          <div 
+          <div
             className="bg-dark-900 rounded-lg p-6 border-2"
             style={{ borderColor: config.cor_primaria || '#FF6B35' }}
           >
             <div className="flex items-center gap-4 mb-4">
-              {(logoPreview || config.logo_url) && (
+              {logoPreview && (
                 <img
-                  src={logoPreview || config.logo_url}
+                  src={logoPreview}
                   alt="Logo"
                   className="h-12 w-auto object-contain"
                 />
               )}
               <h3 className="text-2xl font-bold" style={{ color: config.cor_primaria || '#FF6B35' }}>
-                {config.nome_plataforma || 'WazeFit'}
+                {config.nome_exibicao || 'WazeFit'}
               </h3>
             </div>
             <div className="flex gap-3">
@@ -187,10 +226,10 @@ export function WhiteLabelPage() {
                   file:cursor-pointer cursor-pointer"
               />
             </div>
-            {(logoPreview || config.logo_url) && (
+            {logoPreview && (
               <div className="bg-dark-800 rounded-lg p-4 flex items-center justify-center">
                 <img
-                  src={logoPreview || config.logo_url}
+                  src={logoPreview}
                   alt="Logo preview"
                   className="max-h-24 w-auto object-contain"
                 />
@@ -225,10 +264,10 @@ export function WhiteLabelPage() {
                   file:cursor-pointer cursor-pointer"
               />
             </div>
-            {(faviconPreview || config.favicon_url) && (
+            {faviconPreview && (
               <div className="bg-dark-800 rounded-lg p-4 flex items-center gap-3">
                 <img
-                  src={faviconPreview || config.favicon_url}
+                  src={faviconPreview}
                   alt="Favicon preview"
                   className="w-8 h-8 object-contain"
                 />
@@ -296,13 +335,30 @@ export function WhiteLabelPage() {
           <h2 className="font-semibold text-white mb-4">✏️ Nome da Plataforma</h2>
           <input
             type="text"
-            value={config.nome_plataforma}
-            onChange={(e) => setConfig({ ...config, nome_plataforma: e.target.value })}
+            value={config.nome_exibicao}
+            onChange={(e) => setConfig({ ...config, nome_exibicao: e.target.value })}
             placeholder="Ex: Minha Academia Fit"
             className="w-full bg-dark-700 border border-dark-600 rounded-lg px-4 py-2.5 text-white"
           />
           <p className="text-xs text-gray-500 mt-2">
             Aparece no título da página, emails e notificações
+          </p>
+        </CardBody>
+      </Card>
+
+      {/* Descrição */}
+      <Card>
+        <CardBody>
+          <h2 className="font-semibold text-white mb-4">📝 Descrição</h2>
+          <textarea
+            value={config.descricao}
+            onChange={(e) => setConfig({ ...config, descricao: e.target.value })}
+            placeholder="Ex: A melhor plataforma de treinos personalizados"
+            rows={3}
+            className="w-full bg-dark-700 border border-dark-600 rounded-lg px-4 py-2.5 text-white resize-none"
+          />
+          <p className="text-xs text-gray-500 mt-2">
+            Aparece na tela de login e meta tags do site
           </p>
         </CardBody>
       </Card>
