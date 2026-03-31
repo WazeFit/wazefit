@@ -679,3 +679,141 @@ export const analyticsEventos = sqliteTable(
     index('idx_analytics_criado').on(t.criado_em),
   ],
 )
+
+// ═══════════════════════════════════════════════════════════════
+// 25. WHITE LABEL SETTINGS
+// ═══════════════════════════════════════════════════════════════
+export const whiteLabelSettings = sqliteTable(
+  'white_label_settings',
+  {
+    id: text('id').primaryKey(),
+    tenant_id: text('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    
+    // Branding
+    logo_url: text('logo_url'),
+    logo_small_url: text('logo_small_url'),
+    favicon_url: text('favicon_url'),
+    
+    // Cores
+    cor_primaria: text('cor_primaria').default('#22c55e'),
+    cor_secundaria: text('cor_secundaria').default('#16a34a'),
+    cor_acento: text('cor_acento').default('#059669'),
+    cor_fundo: text('cor_fundo').default('#ffffff'),
+    cor_texto: text('cor_texto').default('#1f2937'),
+    
+    // Textos personalizados
+    nome_app: text('nome_app'),
+    slogan: text('slogan'),
+    email_suporte: text('email_suporte'),
+    telefone_suporte: text('telefone_suporte'),
+    
+    // SEO
+    meta_titulo: text('meta_titulo'),
+    meta_descricao: text('meta_descricao'),
+    meta_keywords: text('meta_keywords'),
+    
+    // Social
+    facebook_url: text('facebook_url'),
+    instagram_url: text('instagram_url'),
+    twitter_url: text('twitter_url'),
+    linkedin_url: text('linkedin_url'),
+    youtube_url: text('youtube_url'),
+    
+    // Configurações
+    ocultar_marca_wazefit: integer('ocultar_marca_wazefit', { mode: 'boolean' }).default(false),
+    custom_css: text('custom_css'),
+    custom_js: text('custom_js'),
+    
+    // Timestamps
+    criado_em: text('criado_em').notNull().default(now),
+    atualizado_em: text('atualizado_em').notNull().default(now),
+  },
+  (t) => [
+    uniqueIndex('idx_white_label_tenant').on(t.tenant_id),
+  ],
+)
+
+// ═══════════════════════════════════════════════════════════════
+// 26. CUSTOM DOMAINS
+// ═══════════════════════════════════════════════════════════════
+export const customDomains = sqliteTable(
+  'custom_domains',
+  {
+    id: text('id').primaryKey(),
+    tenant_id: text('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    
+    // Domínio
+    dominio: text('dominio').notNull(),
+    tipo: text('tipo', { enum: ['custom', 'subdomain'] }).notNull().default('custom'),
+    
+    // Status
+    status: text('status', { enum: ['pending', 'verifying', 'active', 'failed'] })
+      .notNull()
+      .default('pending'),
+    verificado: integer('verificado', { mode: 'boolean' }).default(false),
+    verificado_em: text('verificado_em'),
+    
+    // DNS
+    dns_configured: integer('dns_configured', { mode: 'boolean' }).default(false),
+    dns_records_json: text('dns_records_json').default('[]'),
+    
+    // SSL
+    ssl_status: text('ssl_status', { enum: ['pending', 'active', 'failed'] }).default('pending'),
+    ssl_emitido_em: text('ssl_emitido_em'),
+    ssl_expira_em: text('ssl_expira_em'),
+    
+    // Cloudflare
+    cloudflare_zone_id: text('cloudflare_zone_id'),
+    cloudflare_dns_id: text('cloudflare_dns_id'),
+    
+    // Validação
+    validation_token: text('validation_token'),
+    validation_attempts: integer('validation_attempts').default(0),
+    last_validation_at: text('last_validation_at'),
+    
+    // Erro
+    erro: text('erro'),
+    
+    // Timestamps
+    criado_em: text('criado_em').notNull().default(now),
+    atualizado_em: text('atualizado_em').notNull().default(now),
+    deletado_em: text('deletado_em'),
+  },
+  (t) => [
+    index('idx_custom_domains_tenant').on(t.tenant_id, t.status),
+    index('idx_custom_domains_status').on(t.status, t.verificado),
+  ],
+)
+
+// ═══════════════════════════════════════════════════════════════
+// 27. DOMAIN VERIFICATION LOGS
+// ═══════════════════════════════════════════════════════════════
+export const domainVerificationLogs = sqliteTable(
+  'domain_verification_logs',
+  {
+    id: text('id').primaryKey(),
+    domain_id: text('domain_id')
+      .notNull()
+      .references(() => customDomains.id, { onDelete: 'cascade' }),
+    tenant_id: text('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    
+    // Tentativa
+    tipo: text('tipo', { enum: ['dns', 'http', 'txt'] }).notNull(),
+    sucesso: integer('sucesso', { mode: 'boolean' }).notNull().default(false),
+    detalhes_json: text('detalhes_json').default('{}'),
+    erro: text('erro'),
+    
+    // Timestamp
+    criado_em: text('criado_em').notNull().default(now),
+  },
+  (t) => [
+    index('idx_domain_verification_domain').on(t.domain_id, t.criado_em),
+    index('idx_domain_verification_tenant').on(t.tenant_id, t.criado_em),
+  ],
+)

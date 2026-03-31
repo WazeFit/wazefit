@@ -94,15 +94,19 @@ export function Sidebar({ user, tenant, currentPath, onNavigate, onLogout }: Pro
           onClick={() => onNavigate('/dashboard')} 
           className="flex items-center gap-3 w-full group"
         >
-          <div className="w-10 h-10 bg-gradient-to-br from-brand-500 to-brand-600 rounded-xl flex items-center justify-center font-bold text-white shadow-glow-sm">
-            W
-          </div>
-          <div className="text-left">
-            <div className="text-lg font-bold text-white group-hover:text-brand-400 transition-colors">
-              Waze<span className="text-brand-400">Fit</span>
+          {tenant.logo_url ? (
+            <img src={tenant.logo_url} alt={tenant.nome || 'Logo'} className="w-10 h-10 object-contain rounded-xl" />
+          ) : (
+            <div className="w-10 h-10 bg-gradient-to-br from-brand-500 to-brand-600 rounded-xl flex items-center justify-center font-bold text-white shadow-glow-sm">
+              {tenant.nome ? tenant.nome.charAt(0).toUpperCase() : 'W'}
             </div>
-            <p className="text-xs text-gray-500 truncate max-w-[140px]">
-              {tenant.nome || 'Painel Expert'}
+          )}
+          <div className="text-left">
+            <div className="text-lg font-bold text-white group-hover:text-brand-400 transition-colors truncate max-w-[140px]">
+              {tenant.nome || <>Waze<span className="text-brand-400">Fit</span></>}
+            </div>
+            <p className="text-xs text-gray-500">
+              Painel Expert
             </p>
           </div>
         </button>

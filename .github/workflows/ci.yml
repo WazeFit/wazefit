@@ -53,3 +53,8 @@ jobs:
       - name: Format check
         run: pnpm format:check
         continue-on-error: true
+
+      - name: Tests
+        run: pnpm test
+        env:
+          API_URL: https://api.wazefit.com

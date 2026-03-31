@@ -1,9 +1,12 @@
 /**
- * Página de Login.
+ * Página de Login — com suporte a white label.
+ * Quando acessada via subdomínio do tenant, mostra branding customizado.
  */
 import { useState } from 'react'
 import { login } from '../../stores/auth'
 import type { User, Tenant } from '../../stores/auth'
+import { TenantBrand, useTenantColors } from '../../components/ui/TenantBrand'
+import { useTenant } from '../../contexts/TenantContext'
 
 interface Props {
   onSuccess: (user: User, tenant: Tenant) => void
@@ -15,6 +18,8 @@ export function LoginPage({ onSuccess, onNavigate }: Props) {
   const [senha, setSenha] = useState('')
   const [erro, setErro] = useState('')
   const [loading, setLoading] = useState(false)
+  const { primary } = useTenantColors()
+  const { isTenantHost, branding } = useTenant()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -39,11 +44,14 @@ export function LoginPage({ onSuccess, onNavigate }: Props) {
     <div className="min-h-screen flex items-center justify-center bg-gray-950 px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 mb-4">
-            <div className="w-10 h-10 bg-brand-500 rounded-xl flex items-center justify-center font-bold text-lg">W</div>
-            <span className="text-2xl font-bold text-white">Waze<span className="text-brand-400">Fit</span></span>
+          <div className="flex justify-center mb-4">
+            <TenantBrand size="md" />
           </div>
-          <p className="text-gray-400">Entre na sua conta</p>
+          <p className="text-gray-400">
+            {isTenantHost && branding?.descricao
+              ? branding.descricao
+              : 'Entre na sua conta'}
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -55,26 +63,65 @@ export function LoginPage({ onSuccess, onNavigate }: Props) {
 
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1.5">Email</label>
-            <input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="seu@email.com" required
-              className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500" />
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="seu@email.com"
+              required
+              className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-1"
+              style={{
+                borderColor: undefined,
+                // @ts-expect-error CSS custom property
+                '--tw-ring-color': primary,
+              }}
+              onFocus={e => { e.target.style.borderColor = primary }}
+              onBlur={e => { e.target.style.borderColor = '' }}
+            />
           </div>
 
           <div>
             <label htmlFor="senha" className="block text-sm font-medium text-gray-300 mb-1.5">Senha</label>
-            <input id="senha" type="password" value={senha} onChange={e => setSenha(e.target.value)} placeholder="••••••••" required
-              className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500" />
+            <input
+              id="senha"
+              type="password"
+              value={senha}
+              onChange={e => setSenha(e.target.value)}
+              placeholder="••••••••"
+              required
+              className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-1"
+              onFocus={e => { e.target.style.borderColor = primary }}
+              onBlur={e => { e.target.style.borderColor = '' }}
+            />
           </div>
 
-          <button type="submit" disabled={loading}
-            className="w-full py-3 bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white font-semibold rounded-xl transition-all">
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3 text-white font-semibold rounded-xl transition-all disabled:opacity-50"
+            style={{ backgroundColor: primary }}
+            onMouseEnter={e => { (e.target as HTMLElement).style.opacity = '0.9' }}
+            onMouseLeave={e => { (e.target as HTMLElement).style.opacity = '1' }}
+          >
             {loading ? 'Entrando...' : 'Entrar'}
           </button>
         </form>
 
-        <p className="text-center text-gray-500 text-sm mt-6">
-          Não tem conta?{' '}
-          <button onClick={() => onNavigate('/register')} className="text-brand-400 hover:text-brand-300">Criar conta</button>
-        </p>
+        {/* Só mostra link de registro se NÃO é tenant host (alunos não se auto-registram) */}
+        {!isTenantHost && (
+          <p className="text-center text-gray-500 text-sm mt-6">
+            Não tem conta?{' '}
+            <button onClick={() => onNavigate('/register')} className="text-brand-400 hover:text-brand-300">Criar conta</button>
+          </p>
+        )}
+
+        {/* Powered by WazeFit — só aparece em tenant host */}
+        {isTenantHost && (
+          <p className="text-center text-gray-600 text-xs mt-8">
+            Powered by <span className="text-gray-500">WazeFit</span>
+          </p>
+        )}
       </div>
     </div>
   )

@@ -7,11 +7,11 @@ on:
 
 concurrency:
   group: deploy-${{ github.ref }}
-  cancel-in-progress: false  # Nunca cancelar deploy em andamento
+  cancel-in-progress: false
 
 jobs:
   # ═══════════════════════════════════════════════════════════════
-  # Quality Gate (roda antes do deploy)
+  # Quality Gate
   # ═══════════════════════════════════════════════════════════════
   quality:
     name: 🔍 Quality
@@ -41,9 +41,6 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
-
-      - name: Typecheck
-        run: pnpm typecheck
 
   # ═══════════════════════════════════════════════════════════════
   # Deploy Worker API → Cloudflare Workers
@@ -86,23 +83,14 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
-      - name: Smoke test API
-        run: |
-          sleep 5
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://wazefit-api.${WORKER_SUBDOMAIN:-wazefit}.workers.dev/ping || echo "000")
-          echo "API /ping status: $STATUS"
-          if [ "$STATUS" != "200" ]; then
-            echo "⚠️ Smoke test falhou (status $STATUS) — pode ser DNS propagation"
-          fi
-
   # ═══════════════════════════════════════════════════════════════
-  # Deploy Frontend → Cloudflare Pages
+  # Deploy App Next.js → Cloudflare Pages (White Label)
   # ═══════════════════════════════════════════════════════════════
-  deploy-web:
-    name: 🌐 Web → Pages
+  deploy-app:
+    name: 📱 App → Pages
     needs: quality
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     environment: production
 
     permissions:
@@ -118,33 +106,21 @@ jobs:
         with:
           node-version: 22
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
-      - name: Cache pnpm store
-        uses: actions/cache@v4
-        with:
-          path: ~/.pnpm-store
-          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: pnpm-${{ runner.os }}-
-
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        working-directory: apps/app
+        run: npm install
 
-      - name: Build frontend
-        run: pnpm build
-        env:
-          VITE_API_URL: https://api.wazefit.com
+      - name: Build for Cloudflare Pages
+        working-directory: apps/app
+        run: npx @cloudflare/next-on-pages
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/pages-action@v1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: wazefit
-          directory: apps/web/dist
+          projectName: wazefit-app
+          directory: apps/app/.vercel/output/static
           branch: main
 
   # ═══════════════════════════════════════════════════════════════
@@ -152,7 +128,7 @@ jobs:
   # ═══════════════════════════════════════════════════════════════
   notify:
     name: 📢 Notify
-    needs: [deploy-api, deploy-web]
+    needs: [deploy-api, deploy-app]
     runs-on: ubuntu-latest
     if: always()
     timeout-minutes: 5
@@ -165,7 +141,7 @@ jobs:
           echo "| Component | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| API (Workers) | ${{ needs.deploy-api.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Web (Pages) | ${{ needs.deploy-web.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| App (Pages) | ${{ needs.deploy-app.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY

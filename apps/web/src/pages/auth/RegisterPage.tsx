@@ -1,9 +1,12 @@
 /**
- * Página de Registro.
+ * Página de Registro — com suporte a white label.
+ * Em contexto de tenant, redireciona para login (alunos não se auto-registram).
  */
 import { useState } from 'react'
 import { register } from '../../stores/auth'
 import type { User, Tenant } from '../../stores/auth'
+import { TenantBrand, useTenantColors } from '../../components/ui/TenantBrand'
+import { useTenant } from '../../contexts/TenantContext'
 
 interface Props {
   onSuccess: (user: User, tenant: Tenant) => void
@@ -18,6 +21,14 @@ export function RegisterPage({ onSuccess, onNavigate }: Props) {
   const [telefone, setTelefone] = useState('')
   const [erro, setErro] = useState('')
   const [loading, setLoading] = useState(false)
+  const { primary } = useTenantColors()
+  const { isTenantHost } = useTenant()
+
+  // Em tenant host, alunos não se registram — redirecionar para login
+  if (isTenantHost) {
+    onNavigate('/login')
+    return null
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -32,7 +43,6 @@ export function RegisterPage({ onSuccess, onNavigate }: Props) {
         nome_negocio: nomeNegocio,
         telefone: telefone || undefined,
       })
-      // Chamar callback de sucesso — o App cuida do redirect
       onSuccess(result.user, result.tenant)
     } catch (err) {
       if (err instanceof Error) {
@@ -49,9 +59,8 @@ export function RegisterPage({ onSuccess, onNavigate }: Props) {
     <div className="min-h-screen flex items-center justify-center bg-gray-950 px-4 py-8">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 mb-4">
-            <div className="w-10 h-10 bg-brand-500 rounded-xl flex items-center justify-center font-bold text-lg">W</div>
-            <span className="text-2xl font-bold text-white">Waze<span className="text-brand-400">Fit</span></span>
+          <div className="flex justify-center mb-4">
+            <TenantBrand size="md" />
           </div>
           <p className="text-gray-400">Crie sua conta profissional</p>
         </div>
@@ -95,8 +104,14 @@ export function RegisterPage({ onSuccess, onNavigate }: Props) {
               className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500" />
           </div>
 
-          <button type="submit" disabled={loading}
-            className="w-full py-3 bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white font-semibold rounded-xl transition-all">
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3 text-white font-semibold rounded-xl transition-all disabled:opacity-50"
+            style={{ backgroundColor: primary }}
+            onMouseEnter={e => { (e.target as HTMLElement).style.opacity = '0.9' }}
+            onMouseLeave={e => { (e.target as HTMLElement).style.opacity = '1' }}
+          >
             {loading ? 'Criando conta...' : 'Criar conta grátis'}
           </button>
         </form>

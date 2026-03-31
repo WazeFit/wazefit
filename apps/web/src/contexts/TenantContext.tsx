@@ -77,6 +77,13 @@ export function TenantProvider({ children }: { children: ReactNode }) {
         if (data.nome) {
           document.title = data.nome
         }
+        // Apply CSS custom properties for dynamic theming
+        if (data.cor_primaria) {
+          document.documentElement.style.setProperty('--tenant-primary', data.cor_primaria)
+        }
+        if (data.cor_secundaria) {
+          document.documentElement.style.setProperty('--tenant-secondary', data.cor_secundaria)
+        }
       })
       .catch(() => {
         // Tenant not found — continue without branding

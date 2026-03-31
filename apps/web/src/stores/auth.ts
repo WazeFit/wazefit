@@ -18,6 +18,10 @@ export interface Tenant {
   nome?: string
   slug?: string
   plano?: string
+  logo_url?: string | null
+  cor_primaria?: string | null
+  cor_secundaria?: string | null
+  max_alunos?: number
 }
 
 interface AuthResponse {

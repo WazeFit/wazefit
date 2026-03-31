@@ -13,6 +13,8 @@ export interface Env {
 
   // ── R2 Storage ──
   R2_PRIVATE: R2Bucket
+  R2_BUCKET: R2Bucket
+  R2_PUBLIC_URL: string
 
   // ── Queues ──
   QUEUE_NOTIFY: Queue
@@ -28,6 +30,8 @@ export interface Env {
   SENDGRID_API_KEY: string
   ADMIN_SECRET: string
   CLOUDFLARE_API_TOKEN: string
+  CLOUDFLARE_ACCOUNT_ID: string
+  CLOUDFLARE_PAGES_PROJECT: string
 
   // ── Variáveis ──
   ENVIRONMENT: string
@@ -41,4 +45,6 @@ export interface AuthVariables {
   user_id: string
   role: 'expert' | 'aluno' | 'admin'
   email: string
+  tenant_domain?: string | null
+  tenant_source?: 'jwt' | 'custom_domain' | 'subdomain' | 'default'
 }

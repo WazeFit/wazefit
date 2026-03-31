@@ -55,7 +55,7 @@ function AppInner() {
   const [appPath, setAppPath] = useState('/dashboard')
   
   // ── Detecção automática de tenant ──
-  const { slug: detectedSlug } = useTenantDetection()
+  const { slug: detectedSlug, isTenantHost } = useTenantDetection()
 
   // ── Inicialização ──
   useEffect(() => {
@@ -75,9 +75,10 @@ function AppInner() {
       } else {
         const path = window.location.pathname
         if (path === '/login') setPage('login')
-        else if (path === '/register') setPage('register')
-        else if (path === '/' || path === '') setPage('landing')
+        else if (path === '/register' && !isTenantHost) setPage('register')
+        else if ((path === '/' || path === '') && !isTenantHost) setPage('landing')
         else {
+          // Em tenant host, vai direto pro login (sem landing/register)
           window.history.replaceState(null, '', '/login')
           setPage('login')
         }

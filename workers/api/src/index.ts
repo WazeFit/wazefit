@@ -18,10 +18,13 @@ import { nutricaoRouter } from './routes/nutricao'
 import { avaliacoesRouter } from './routes/avaliacoes'
 import { tenantRouter } from './routes/tenant'
 import { dominiosRouter } from './routes/dominios'
+import { domainsRouter } from './routes/domains'
+import { whiteLabelRouter } from './routes/white-label'
 import { pushRouter } from './routes/push'
 import { periodizacaoRouter } from './routes/periodizacao'
 import { adminRouter } from './routes/admin'
 import { analyticsRouter } from './routes/analytics'
+import { publicRouter } from './routes/public'
 
 // ── App principal ──
 const app = new Hono<{
@@ -68,10 +71,15 @@ app.route('/api/v1/tenant', tenantRouter)
 
 // ── Sprint 4 Routes ──
 app.route('/api/v1/tenant/dominios', dominiosRouter)
+app.route('/api/v1/tenant/domains', domainsRouter)
+app.route('/api/v1/tenant/white-label', whiteLabelRouter)
 app.route('/api/v1/push', pushRouter)
 app.route('/api/v1/periodizacao', periodizacaoRouter)
 app.route('/api/v1/admin', adminRouter)
 app.route('/api/v1/analytics', analyticsRouter)
+
+// ── Public Routes (sem auth) ──
+app.route('/api/v1/public', publicRouter)
 
 // ── 404 fallback ──
 app.notFound((c) => {

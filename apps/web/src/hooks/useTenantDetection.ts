@@ -13,6 +13,7 @@ import { getTenantSlugFromHostname, isCustomDomain, setTenantSlug, getTenantSlug
 export function useTenantDetection() {
   const [slug, setSlug] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isTenantHost, setIsTenantHost] = useState(false)
 
   useEffect(() => {
     async function detect() {
@@ -21,12 +22,14 @@ export function useTenantDetection() {
       if (hostnameSlug) {
         setTenantSlug(hostnameSlug)
         setSlug(hostnameSlug)
+        setIsTenantHost(true)
         setLoading(false)
         return
       }
 
       // Se for domínio custom, faz lookup
       if (isCustomDomain()) {
+        setIsTenantHost(true) // domínio custom = é tenant host
         try {
           const res = await fetch(
             `https://api.wazefit.com/api/v1/tenant/lookup?domain=${window.location.hostname}`
@@ -53,5 +56,5 @@ export function useTenantDetection() {
     detect()
   }, [])
 
-  return { slug, loading }
+  return { slug, loading, isTenantHost }
 }
