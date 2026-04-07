@@ -8,10 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.wazefit.com";
+
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [senha, setSenha] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -21,21 +23,38 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const response = await fetch("/api/auth/login", {
+      // Chamar API real diretamente
+      const res = await fetch(`${API_URL}/api/v1/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, senha }),
       });
 
-      if (!response.ok) {
-        throw new Error("Credenciais inválidas");
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Credenciais invalidas");
       }
 
-      const data = await response.json();
-      
-      // Redireciona baseado no role
-      if (data.user.role === "expert") {
+      // Salvar token no localStorage (lido pelo api.ts)
+      if (data.token) {
+        localStorage.setItem("wf_token", data.token);
+      }
+
+      // Salvar dados do user/tenant
+      if (data.user) {
+        localStorage.setItem("wf_user", JSON.stringify(data.user));
+      }
+      if (data.tenant) {
+        localStorage.setItem("wf_tenant", JSON.stringify(data.tenant));
+      }
+
+      // Redirecionar baseado no role
+      const role = data.user?.role || data.role;
+      if (role === "expert" || role === "owner") {
         router.push("/expert/dashboard");
+      } else if (role === "admin") {
+        router.push("/admin");
       } else {
         router.push("/user/treinos");
       }
@@ -73,15 +92,15 @@ export default function LoginPage() {
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium">
+              <label htmlFor="senha" className="text-sm font-medium">
                 Senha
               </label>
               <Input
-                id="password"
+                id="senha"
                 type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                placeholder="********"
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
                 required
               />
             </div>

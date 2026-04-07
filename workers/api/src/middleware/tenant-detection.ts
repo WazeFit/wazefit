@@ -18,7 +18,7 @@ import type { Context, Next } from 'hono'
 import { eq, and, isNull } from 'drizzle-orm'
 import type { Env, AuthVariables } from '../types'
 import { createDB } from '../db/client'
-import { customDomains } from '../db/schema'
+import { customDomains, tenants } from '../db/schema'
 
 export const tenantDetectionMiddleware = async (
   c: Context<{ Bindings: Env; Variables: AuthVariables }>,
@@ -60,14 +60,26 @@ export const tenantDetectionMiddleware = async (
         tenantId = domain.tenant_id
         tenantDomain = hostname
         tenantSource = 'custom_domain'
-      } else if (hostname.endsWith('.wazefit.com') && hostname !== 'wazefit.com') {
-        // 3. Subdomain *.wazefit.com
-        // Buscar tenant por slug (assumindo slug = subdomain)
-        // Nota: precisa de uma query adicional em tenants
-        // Por ora, apenas registra o subdomain
-        tenantDomain = hostname
-        tenantSource = 'subdomain'
-        // tenantId ainda null — precisa implementar lookup por slug
+      } else if (hostname.endsWith('.wazefit.com') && hostname !== 'wazefit.com' && hostname !== 'api.wazefit.com') {
+        // 3. Subdomain *.wazefit.com → buscar tenant por slug
+        const slug = hostname.replace('.wazefit.com', '')
+        const tenant = await db
+          .select({ id: tenants.id })
+          .from(tenants)
+          .where(
+            and(
+              eq(tenants.slug, slug),
+              eq(tenants.ativo, true),
+              isNull(tenants.deletado_em),
+            ),
+          )
+          .get()
+
+        if (tenant) {
+          tenantId = tenant.id
+          tenantDomain = hostname
+          tenantSource = 'subdomain'
+        }
       }
     }
   }

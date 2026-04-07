@@ -17,7 +17,6 @@ import { llmRouter } from './routes/llm'
 import { nutricaoRouter } from './routes/nutricao'
 import { avaliacoesRouter } from './routes/avaliacoes'
 import { tenantRouter } from './routes/tenant'
-import { dominiosRouter } from './routes/dominios'
 import { domainsRouter } from './routes/domains'
 import { whiteLabelRouter } from './routes/white-label'
 import { pushRouter } from './routes/push'
@@ -70,8 +69,8 @@ app.route('/api/v1/avaliacoes', avaliacoesRouter)
 app.route('/api/v1/tenant', tenantRouter)
 
 // ── Sprint 4 Routes ──
-app.route('/api/v1/tenant/dominios', dominiosRouter)
 app.route('/api/v1/tenant/domains', domainsRouter)
+app.route('/api/v1/tenant/dominios', domainsRouter) // alias PT-BR para compatibilidade
 app.route('/api/v1/tenant/white-label', whiteLabelRouter)
 app.route('/api/v1/push', pushRouter)
 app.route('/api/v1/periodizacao', periodizacaoRouter)

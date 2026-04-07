@@ -3,29 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Dumbbell, Apple, Trophy, MessageCircle } from "lucide-react";
+import { Dumbbell, Apple, Trophy, MessageCircle, User } from "lucide-react";
 
 const navigation = [
-  {
-    name: "Treinos",
-    href: "/user/treinos",
-    icon: Dumbbell,
-  },
-  {
-    name: "Dieta",
-    href: "/user/dieta",
-    icon: Apple,
-  },
-  {
-    name: "Ranking",
-    href: "/user/ranking",
-    icon: Trophy,
-  },
-  {
-    name: "Chat",
-    href: "/user/chat",
-    icon: MessageCircle,
-  },
+  { name: "Treinos", href: "/user/treinos", icon: Dumbbell },
+  { name: "Dieta", href: "/user/dieta", icon: Apple },
+  { name: "Ranking", href: "/user/ranking", icon: Trophy },
+  { name: "Chat", href: "/user/chat", icon: MessageCircle },
+  { name: "Perfil", href: "/user/perfil", icon: User },
 ];
 
 export function UserNav() {

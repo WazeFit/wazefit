@@ -14,7 +14,7 @@ jobs:
   # Quality Gate
   # ═══════════════════════════════════════════════════════════════
   quality:
-    name: 🔍 Quality
+    name: Quality
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -43,10 +43,10 @@ jobs:
         run: pnpm install --no-frozen-lockfile
 
   # ═══════════════════════════════════════════════════════════════
-  # Deploy Worker API → Cloudflare Workers
+  # Deploy Worker API
   # ═══════════════════════════════════════════════════════════════
   deploy-api:
-    name: 🚀 API → Workers
+    name: API Worker
     needs: quality
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -66,17 +66,10 @@ jobs:
         with:
           version: 10
 
-      - name: Cache pnpm store
-        uses: actions/cache@v4
-        with:
-          path: ~/.pnpm-store
-          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: pnpm-${{ runner.os }}-
-
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
 
-      - name: Deploy Worker
+      - name: Deploy API Worker
         working-directory: workers/api
         run: npx wrangler deploy
         env:
@@ -84,10 +77,112 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
   # ═══════════════════════════════════════════════════════════════
-  # Deploy App Next.js → Cloudflare Pages (White Label)
+  # Deploy Worker LLM (Queue Consumer)
+  # ═══════════════════════════════════════════════════════════════
+  deploy-llm:
+    name: LLM Worker
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Deploy LLM Worker
+        working-directory: workers/llm
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+  # ═══════════════════════════════════════════════════════════════
+  # Deploy Worker Email (Queue Consumer)
+  # ═══════════════════════════════════════════════════════════════
+  deploy-email:
+    name: Email Worker
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Deploy Email Worker
+        working-directory: workers/email
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+  # ═══════════════════════════════════════════════════════════════
+  # Deploy Tenant Proxy Worker
+  # ═══════════════════════════════════════════════════════════════
+  deploy-tenant-proxy:
+    name: Tenant Proxy Worker
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Deploy Tenant Proxy Worker
+        working-directory: workers/tenant-proxy
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+  # ═══════════════════════════════════════════════════════════════
+  # Deploy App Next.js → Cloudflare Pages
   # ═══════════════════════════════════════════════════════════════
   deploy-app:
-    name: 📱 App → Pages
+    name: App Pages
     needs: quality
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -113,6 +208,8 @@ jobs:
       - name: Build for Cloudflare Pages
         working-directory: apps/app
         run: npx @cloudflare/next-on-pages
+        env:
+          NEXT_PUBLIC_API_URL: https://api.wazefit.com
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/pages-action@v1
@@ -124,11 +221,11 @@ jobs:
           branch: main
 
   # ═══════════════════════════════════════════════════════════════
-  # Notificação pós-deploy
+  # Notify
   # ═══════════════════════════════════════════════════════════════
   notify:
-    name: 📢 Notify
-    needs: [deploy-api, deploy-app]
+    name: Summary
+    needs: [deploy-api, deploy-llm, deploy-email, deploy-tenant-proxy, deploy-app]
     runs-on: ubuntu-latest
     if: always()
     timeout-minutes: 5
@@ -140,7 +237,10 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Component | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| API (Workers) | ${{ needs.deploy-api.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| API Worker | ${{ needs.deploy-api.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| LLM Worker | ${{ needs.deploy-llm.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Email Worker | ${{ needs.deploy-email.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tenant Proxy | ${{ needs.deploy-tenant-proxy.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| App (Pages) | ${{ needs.deploy-app.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY

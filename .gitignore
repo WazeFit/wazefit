@@ -1,9 +1,13 @@
 node_modules/
 dist/
+.next/
+.vercel/
 .wrangler/
 .dev.vars
 .env
 .env.local
+.env.production
+*.secret
 *.log
 .DS_Store
 .turbo/

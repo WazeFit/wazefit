@@ -1,42 +1,51 @@
 export const runtime = 'edge';
 import { NextRequest, NextResponse } from "next/server";
-import { createToken, setAuthCookie } from "@/lib/auth";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.wazefit.com";
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json();
+    const { email, senha, tenant_slug } = await request.json();
 
-    // TODO: Validar credenciais com a API
-    // const response = await fetch("https://api.wazefit.com/auth/login", {
-    //   method: "POST",
-    //   headers: { "Content-Type": "application/json" },
-    //   body: JSON.stringify({ email, password }),
-    // });
-
-    // Mock de autenticação para desenvolvimento
-    if (!email || !password) {
+    if (!email || !senha) {
       return NextResponse.json(
-        { error: "Email e senha são obrigatórios" },
+        { error: "Email e senha sao obrigatorios" },
         { status: 400 }
       );
     }
 
-    // Mock user (em produção, virá da API)
-    const user = {
-      id: "1",
-      email,
-      name: email.split("@")[0],
-      role: email.includes("expert") ? "expert" : "user",
-      tenantId: "default",
-    } as const;
+    // Chamar API real do WazeFit
+    const apiRes = await fetch(`${API_URL}/api/v1/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, senha, tenant_slug }),
+    });
 
-    // Cria token JWT
-    const token = await createToken(user);
+    const data = await apiRes.json();
 
-    // Define cookie
-    await setAuthCookie(token);
+    if (!apiRes.ok) {
+      return NextResponse.json(
+        { error: data.error || "Credenciais invalidas" },
+        { status: apiRes.status }
+      );
+    }
 
-    return NextResponse.json({ user });
+    // A API retorna { token, user, tenant }
+    // Salvar o JWT da API no cookie httpOnly
+    const response = NextResponse.json({
+      user: data.user,
+      tenant: data.tenant,
+    });
+
+    response.cookies.set("wf_token", data.token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 7, // 7 dias
+      path: "/",
+    });
+
+    return response;
   } catch (error) {
     console.error("Login error:", error);
     return NextResponse.json(

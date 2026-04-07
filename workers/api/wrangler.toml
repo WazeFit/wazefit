@@ -27,14 +27,14 @@ id = "4a34005c31214145b371fad7f1c91b56"
 binding = "KV_JOBS"
 id = "64ac02bd4b5a46b8bfef16ec46aa2eaf"
 
-# ── R2 Buckets (habilitar R2 no dashboard primeiro) ──
-# [[r2_buckets]]
-# binding = "R2_PRIVATE"
-# bucket_name = "wazefit-private"
+# ── R2 Buckets ──
+[[r2_buckets]]
+binding = "R2_PRIVATE"
+bucket_name = "wazefit-private"
 
-# [[r2_buckets]]
-# binding = "R2_BUCKET"
-# bucket_name = "wazefit-public"
+[[r2_buckets]]
+binding = "R2_BUCKET"
+bucket_name = "wazefit-public"
 
 # ── Queues (Producers) ──
 [[queues.producers]]
@@ -55,6 +55,14 @@ queue = "wazefit-webhooks"
 
 [vars]
 ENVIRONMENT = "production"
-CLOUDFLARE_API_TOKEN = "1gVm1ONLbaHVMALMbqmZV3Estyqx6Ipr01GaRIU4"
-CLOUDFLARE_ACCOUNT_ID = "2529853c8c5ed14c04e8ede995caaea6"
 CLOUDFLARE_PAGES_PROJECT = "wazefit"
+
+# ── Secrets (configurar via: wrangler secret put <NOME> --name wazefit-api) ──
+# JWT_SECRET
+# ADMIN_SECRET
+# ANTHROPIC_API_KEY
+# SENDGRID_API_KEY
+# STRIPE_SECRET_KEY
+# STRIPE_WEBHOOK_SECRET
+# CLOUDFLARE_API_TOKEN
+# CLOUDFLARE_ACCOUNT_ID
