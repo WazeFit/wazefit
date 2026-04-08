@@ -1,76 +1,95 @@
 /**
  * WazeFit Tenant Proxy Worker
- * 
- * Rota *.wazefit.com → wazefit.pages.dev
- * Extrai {slug} do hostname e injeta no frontend via header
+ *
+ * wazefit.com / www.wazefit.com → wazefit.pages.dev (landing/onboarding)
+ * *.wazefit.com (subdomínios) → wazefit-tenant.pages.dev (painel expert/aluno)
+ * api.wazefit.com → NÃO passa aqui (rota separada no wrangler)
  */
 
-interface Env {
-  // Vazio por enquanto — pode adicionar KV depois pra cache
-}
+interface Env {}
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url)
     const hostname = url.hostname
 
-    // Se for apex ou www, passa direto pro Pages
+    // ── Apex/www → site principal (landing, onboarding, registro) ──
     if (hostname === 'wazefit.com' || hostname === 'www.wazefit.com') {
-      return fetch(`https://wazefit.pages.dev${url.pathname}${url.search}`, {
-        ...request,
-        headers: request.headers,
+      const pagesUrl = `https://wazefit.pages.dev${url.pathname}${url.search}`
+      const headers = new Headers()
+      headers.set('Host', 'wazefit.pages.dev')
+      headers.set('User-Agent', request.headers.get('User-Agent') || 'WazeFit-Proxy')
+      const cookie = request.headers.get('Cookie')
+      if (cookie) headers.set('Cookie', cookie)
+
+      const response = await fetch(new Request(pagesUrl, {
+        method: request.method,
+        headers,
+        body: request.method !== 'GET' && request.method !== 'HEAD' ? request.body : undefined,
+        redirect: 'manual',
+      }))
+
+      return new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers,
       })
     }
 
-    // Extrai slug do subdomínio (ex: academia-x.wazefit.com → academia-x)
+    // ── Subdomínios (trainer-pro.wazefit.com) → painel tenant ──
     const slug = hostname.replace('.wazefit.com', '')
 
-    // Valida slug (apenas letras, números e hífens)
-    if (!/^[a-z0-9-]+$/.test(slug)) {
-      return new Response('Invalid subdomain', { status: 400 })
+    if (!/^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/.test(slug)) {
+      return new Response('Subdominio invalido', { status: 400 })
     }
 
-    // Faz proxy pro Pages
-    // Importante: não pode passar headers customizados pro Pages.dev, senão dá 522
-    const pagesUrl = `https://wazefit.pages.dev${url.pathname}${url.search}`
-    
-    // Cria headers limpos (apenas os essenciais)
+    // Proxy para o painel tenant (Next.js no Cloudflare Pages)
+    const tenantUrl = `https://wazefit-tenant.pages.dev${url.pathname}${url.search}`
     const headers = new Headers()
-    headers.set('Host', 'wazefit.pages.dev')
+    headers.set('Host', 'wazefit-tenant.pages.dev')
     headers.set('User-Agent', request.headers.get('User-Agent') || 'WazeFit-Proxy')
-    
-    // Copia cookies se existirem
+
+    // Passar cookies e auth
     const cookie = request.headers.get('Cookie')
     if (cookie) headers.set('Cookie', cookie)
+    const auth = request.headers.get('Authorization')
+    if (auth) headers.set('Authorization', auth)
 
-    const pagesRequest = new Request(pagesUrl, {
+    // Passar content-type para POST/PUT
+    if (request.method !== 'GET' && request.method !== 'HEAD') {
+      const ct = request.headers.get('Content-Type')
+      if (ct) headers.set('Content-Type', ct)
+    }
+
+    const proxyRequest = new Request(tenantUrl, {
       method: request.method,
       headers,
+      body: request.method !== 'GET' && request.method !== 'HEAD' ? request.body : undefined,
       redirect: 'manual',
     })
 
-    const response = await fetch(pagesRequest)
-    
-    // Adiciona headers de tenant na response (pro frontend ler via JS)
+    const response = await fetch(proxyRequest)
+
+    // Adicionar headers de tenant na response
     const newHeaders = new Headers(response.headers)
     newHeaders.set('X-Tenant-Slug', slug)
     newHeaders.set('X-Original-Host', hostname)
 
-    const newResponse = new Response(response.body, {
+    // Reescrever redirects para manter dominio do tenant
+    if (response.status >= 300 && response.status < 400) {
+      const location = response.headers.get('Location')
+      if (location) {
+        const fixed = location
+          .replace('wazefit-tenant.pages.dev', hostname)
+          .replace('wazefit.pages.dev', hostname)
+        newHeaders.set('Location', fixed)
+      }
+    }
+
+    return new Response(response.body, {
       status: response.status,
       statusText: response.statusText,
       headers: newHeaders,
     })
-
-    // Reescreve Location header em redirects pra manter o domínio custom
-    if (newResponse.status >= 300 && newResponse.status < 400) {
-      const location = newResponse.headers.get('Location')
-      if (location && location.includes('wazefit.pages.dev')) {
-        const newLocation = location.replace('wazefit.pages.dev', hostname)
-        newHeaders.set('Location', newLocation)
-      }
-    }
-
-    return newResponse
   },
 }
