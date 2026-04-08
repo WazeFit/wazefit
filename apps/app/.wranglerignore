@@ -1,8 +1,0 @@
-# Arquivos desnecessários para deploy
-cache/
-.next/cache/
-node_modules/
-.git/
-.env*
-*.log
-.DS_Store

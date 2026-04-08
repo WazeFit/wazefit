@@ -179,18 +179,14 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
   # ═══════════════════════════════════════════════════════════════
-  # Deploy App Next.js → Cloudflare Pages
+  # Deploy Site (wazefit.com) → Cloudflare Pages
   # ═══════════════════════════════════════════════════════════════
-  deploy-app:
-    name: App Pages
+  deploy-site:
+    name: Site Pages
     needs: quality
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     environment: production
-
-    permissions:
-      contents: read
-      deployments: write
 
     steps:
       - name: Checkout
@@ -201,31 +197,18 @@ jobs:
         with:
           node-version: 22
 
-      - name: Install dependencies
-        working-directory: apps/app
-        run: npm install
-
-      - name: Build for Cloudflare Pages
-        working-directory: apps/app
-        run: npx @cloudflare/next-on-pages
-        env:
-          NEXT_PUBLIC_API_URL: https://api.wazefit.com
-
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/pages-action@v1
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: wazefit-app
-          directory: apps/app/.vercel/output/static
-          branch: main
+        run: npx wrangler pages deploy apps/site/out --project-name=wazefit --commit-dirty=true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
   # ═══════════════════════════════════════════════════════════════
   # Notify
   # ═══════════════════════════════════════════════════════════════
   notify:
     name: Summary
-    needs: [deploy-api, deploy-llm, deploy-email, deploy-tenant-proxy, deploy-app]
+    needs: [deploy-api, deploy-llm, deploy-email, deploy-tenant-proxy, deploy-site]
     runs-on: ubuntu-latest
     if: always()
     timeout-minutes: 5
@@ -241,7 +224,7 @@ jobs:
           echo "| LLM Worker | ${{ needs.deploy-llm.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Email Worker | ${{ needs.deploy-email.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Tenant Proxy | ${{ needs.deploy-tenant-proxy.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| App (Pages) | ${{ needs.deploy-app.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Site (Pages) | ${{ needs.deploy-site.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY

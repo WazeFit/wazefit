@@ -1,0 +1,26 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "next-app",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 3000,
+      "cwd": "apps/app"
+    },
+    {
+      "name": "vite-web",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["vite"],
+      "port": 5173,
+      "cwd": "apps/web"
+    },
+    {
+      "name": "api-worker",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["wrangler", "dev", "src/index.ts", "--local"],
+      "port": 8787,
+      "cwd": "workers/api"
+    }
+  ]
+}
