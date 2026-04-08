@@ -24,6 +24,9 @@ import { periodizacaoRouter } from './routes/periodizacao'
 import { adminRouter } from './routes/admin'
 import { analyticsRouter } from './routes/analytics'
 import { publicRouter } from './routes/public'
+import { feedRouter } from './routes/feed'
+import { desafiosRouter } from './routes/desafios'
+import { badgesRouter } from './routes/badges'
 
 // ── App principal ──
 const app = new Hono<{
@@ -76,6 +79,11 @@ app.route('/api/v1/push', pushRouter)
 app.route('/api/v1/periodizacao', periodizacaoRouter)
 app.route('/api/v1/admin', adminRouter)
 app.route('/api/v1/analytics', analyticsRouter)
+
+// ── Sprint 5 - Comunidade Routes ──
+app.route('/api/v1/feed', feedRouter)
+app.route('/api/v1/desafios', desafiosRouter)
+app.route('/api/v1/badges', badgesRouter)
 
 // ── Public Routes (sem auth) ──
 app.route('/api/v1/public', publicRouter)
