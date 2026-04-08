@@ -369,4 +369,101 @@ auth.get('/me', authMiddleware, async (c) => {
   })
 })
 
+// ═══════════════════════════════════════════════════════════════
+// POST /auth/forgot-password — Solicitar reset de senha
+// ═══════════════════════════════════════════════════════════════
+const forgotPasswordSchema = z.object({
+  email: z.string().email('Email invalido.'),
+})
+
+auth.post('/forgot-password', zValidator('json', forgotPasswordSchema), async (c) => {
+  const { email } = c.req.valid('json')
+  const db = createDB(c.env.DB)
+
+  // Buscar expert ou aluno
+  let userId = ''
+  let nome = ''
+  let role: 'expert' | 'aluno' = 'expert'
+
+  const expert = await db.select().from(experts).where(eq(experts.email, email)).get()
+  if (expert) {
+    userId = expert.id
+    nome = expert.nome
+    role = 'expert'
+  } else {
+    const aluno = await db.select().from(alunos).where(eq(alunos.email, email)).get()
+    if (aluno) {
+      userId = aluno.id
+      nome = aluno.nome
+      role = 'aluno'
+    }
+  }
+
+  // Sempre retornar sucesso (nao revelar se email existe)
+  if (!userId) {
+    return c.json({ message: 'Se o email existir, voce recebera um link de recuperacao.' })
+  }
+
+  // Gerar token de reset (1 hora de validade)
+  const resetToken = crypto.randomUUID().replace(/-/g, '')
+  await c.env.KV_SESSIONS.put(
+    `reset:${resetToken}`,
+    JSON.stringify({ userId, role, email }),
+    { expirationTtl: 3600 }, // 1 hora
+  )
+
+  // Enviar email via queue
+  const resetLink = `https://wazefit-app.pages.dev/reset-password?token=${resetToken}`
+
+  try {
+    await c.env.QUEUE_EMAILS.send({
+      type: 'reset_senha',
+      to: email,
+      data: { nome, link_reset: resetLink },
+    })
+  } catch (err) {
+    console.error('Erro ao enfileirar email de reset:', err)
+  }
+
+  return c.json({ message: 'Se o email existir, voce recebera um link de recuperacao.' })
+})
+
+// ═══════════════════════════════════════════════════════════════
+// POST /auth/reset-password — Redefinir senha com token
+// ═══════════════════════════════════════════════════════════════
+const resetPasswordSchema = z.object({
+  token: z.string().min(1, 'Token obrigatorio.'),
+  nova_senha: z
+    .string()
+    .min(8, 'Senha deve ter pelo menos 8 caracteres.')
+    .regex(/[A-Z]/, 'Senha deve ter pelo menos uma letra maiuscula.')
+    .regex(/[0-9]/, 'Senha deve ter pelo menos um numero.'),
+})
+
+auth.post('/reset-password', zValidator('json', resetPasswordSchema), async (c) => {
+  const { token, nova_senha } = c.req.valid('json')
+  const db = createDB(c.env.DB)
+
+  // Verificar token no KV
+  const raw = await c.env.KV_SESSIONS.get(`reset:${token}`)
+  if (!raw) {
+    return c.json({ error: 'Token invalido ou expirado.', code: 400 }, 400)
+  }
+
+  const { userId, role } = JSON.parse(raw) as { userId: string; role: string; email: string }
+  const senhaHash = await hashPassword(nova_senha)
+  const timestamp = now()
+
+  if (role === 'expert') {
+    await db.update(experts).set({ senha_hash: senhaHash, atualizado_em: timestamp }).where(eq(experts.id, userId))
+  } else {
+    await db.update(alunos).set({ senha_hash: senhaHash, atualizado_em: timestamp }).where(eq(alunos.id, userId))
+  }
+
+  // Invalidar token
+  await c.env.KV_SESSIONS.delete(`reset:${token}`)
+
+  return c.json({ message: 'Senha alterada com sucesso.' })
+})
+
 export { auth }
