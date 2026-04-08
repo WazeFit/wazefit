@@ -216,7 +216,7 @@ export interface Cobranca {
   id: string
   aluno_id: string
   aluno_nome?: string
-  valor: number
+  valor_centavos: number
   status: string
   vencimento: string
   descricao: string | null
@@ -225,7 +225,7 @@ export interface Cobranca {
 
 export interface CobrancaInput {
   aluno_id: string
-  valor: number
+  valor_centavos: number
   vencimento: string
   descricao?: string
 }
@@ -392,7 +392,7 @@ export interface PlanoNutricionalInput {
 
 export interface MedidaCorporal {
   local: string
-  valor: number
+  valor_centavos: number
   unidade: string
 }
 
