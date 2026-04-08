@@ -27,16 +27,14 @@ id = "4a34005c31214145b371fad7f1c91b56"
 binding = "KV_JOBS"
 id = "64ac02bd4b5a46b8bfef16ec46aa2eaf"
 
-# ── R2 Buckets (habilitar R2 no Cloudflare Dashboard primeiro) ──
-# Ativar em: dash.cloudflare.com > R2 Object Storage > Enable
-# Depois descomentar e rodar: wrangler r2 bucket create wazefit-private && wrangler r2 bucket create wazefit-public
-# [[r2_buckets]]
-# binding = "R2_PRIVATE"
-# bucket_name = "wazefit-private"
+# ── R2 Buckets ──
+[[r2_buckets]]
+binding = "R2_PRIVATE"
+bucket_name = "wazefit-private"
 
-# [[r2_buckets]]
-# binding = "R2_BUCKET"
-# bucket_name = "wazefit-public"
+[[r2_buckets]]
+binding = "R2_BUCKET"
+bucket_name = "wazefit-public"
 
 # ── Queues (Producers) ──
 [[queues.producers]]
