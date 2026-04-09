@@ -288,11 +288,11 @@ domainsRouter.post('/:id/verify', async (c) => {
       await db
         .update(customDomains)
         .set({
-          status: pagesRegistered ? 'active' : 'provisioning',
+          status: pagesRegistered ? 'active' : 'verifying',
           verificado: true,
           verificado_em: timestamp,
           dns_configured: true,
-          ssl_status: pagesRegistered ? 'provisioning' : 'pending',
+          ssl_status: 'pending',
           erro: pagesRegistered ? null : 'DNS verificado, aguardando provisionamento no Cloudflare Pages',
           validation_attempts: (domain.validation_attempts || 0) + 1,
           last_validation_at: timestamp,

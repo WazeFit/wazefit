@@ -13,7 +13,6 @@ import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import type { Env, AuthVariables } from '../types'
-import { createDB } from '../db/client'
 import { generateId, now } from '../lib/id'
 import { authMiddleware } from '../middleware/auth'
 
@@ -57,7 +56,6 @@ feedRouter.post('/', zValidator('json', createPostSchema), async (c) => {
   const tenantId = c.get('tenant_id')
   const userId = c.get('user_id')
   const role = c.get('role')
-  const db = createDB(c.env.DB)
 
   // Buscar nome do usuario
   let userName = 'Usuario'
