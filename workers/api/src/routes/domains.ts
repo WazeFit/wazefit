@@ -226,7 +226,7 @@ domainsRouter.post('/:id/verify', async (c) => {
     const cnameTarget = cnameData.Answer?.[0]?.data
 
     if (!cnameTarget || !cnameTarget.includes('wazefit')) {
-      result.errors?.push('CNAME não aponta para wazefit.pages.dev')
+      result.errors?.push('CNAME não aponta para app.wazefit.com')
     } else {
       result.dns_configured = true
     }

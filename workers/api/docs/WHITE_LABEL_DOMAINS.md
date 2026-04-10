@@ -179,7 +179,7 @@ Listar domínios customizados do tenant.
         {
           "type": "CNAME",
           "name": "app.fitpro.com",
-          "value": "wazefit.pages.dev",
+          "value": "app.wazefit.com",
           "ttl": 3600
         },
         {
@@ -230,7 +230,7 @@ Adicionar domínio customizado.
     {
       "type": "CNAME",
       "name": "app.fitpro.com",
-      "value": "wazefit.pages.dev",
+      "value": "app.wazefit.com",
       "ttl": 3600
     },
     {
@@ -274,7 +274,7 @@ Verificar DNS do domínio.
   "dns_configured": false,
   "ssl_ready": false,
   "errors": [
-    "CNAME não aponta para wazefit.pages.dev",
+    "CNAME não aponta para app.wazefit.com",
     "TXT record de validação não encontrado ou incorreto"
   ]
 }
@@ -421,7 +421,7 @@ POST /api/v1/tenant/domains
 # Response:
 {
   "dns_records": [
-    { "type": "CNAME", "name": "app.fitpro.com", "value": "wazefit.pages.dev" },
+    { "type": "CNAME", "name": "app.fitpro.com", "value": "app.wazefit.com" },
     { "type": "TXT", "name": "_wazefit-verify.app.fitpro.com", "value": "wazefit-verify-xyz123" }
   ],
   "message": "Configure os DNS records..."
@@ -435,13 +435,13 @@ POST /api/v1/tenant/domains
 **Exemplo Cloudflare:**
 1. Acesse DNS settings de `fitpro.com`
 2. Adicione:
-   - **CNAME:** `app` → `wazefit.pages.dev` (Proxied ✅)
+   - **CNAME:** `app` → `app.wazefit.com` (Proxied ✅)
    - **TXT:** `_wazefit-verify.app` → `wazefit-verify-xyz123`
 
 **Exemplo GoDaddy/Registro.br:**
 1. Acesse gerenciamento de DNS
 2. Adicione:
-   - **CNAME:** `app` → `wazefit.pages.dev`
+   - **CNAME:** `app` → `app.wazefit.com`
    - **TXT:** `_wazefit-verify.app` → `wazefit-verify-xyz123`
 
 ---
@@ -478,7 +478,7 @@ Após verificação bem-sucedida:
 O middleware CORS aceita:
 - `localhost:*` (dev)
 - `*.wazefit.com`
-- `*.wazefit.pages.dev`
+- `*.app.wazefit.com`
 - **Domínios customizados ativos** (verificados em `custom_domains`)
 
 ### Tenant Detection

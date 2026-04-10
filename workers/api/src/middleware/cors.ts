@@ -2,10 +2,17 @@ import { cors } from 'hono/cors'
 
 /**
  * Middleware CORS — permite origens do frontend WazeFit.
- * Aceita: wazefit.com (+ qualquer subdominio white label), localhost dev,
- * e qualquer projeto/preview Pages cujo host comece com "wazefit"
- * (wazefit.pages.dev, wazefit-tenant.pages.dev, wazefit-app.pages.dev,
- * abc123.wazefit-tenant.pages.dev, etc.).
+ *
+ * Em producao SO existe wazefit.com (e seus subdominios white label).
+ * Os hosts *.pages.dev sao backends internos consumidos via proxy
+ * (tenant-proxy worker), nao deveriam ser acessados direto pelo browser.
+ *
+ * Mesmo assim aceitamos:
+ * - wazefit.pages.dev      (landing — em caso de fallback)
+ * - wazefit-tenant.pages.dev (painel — em caso de fallback)
+ * - previews abc123.wazefit-tenant.pages.dev
+ *
+ * NAO aceitamos mais wazefit-app.pages.dev — projeto deletado em 2026-04.
  */
 export const corsMiddleware = cors({
   origin: (origin) => {
@@ -17,7 +24,6 @@ export const corsMiddleware = cors({
       'http://localhost:8787',
       'https://wazefit.com',
       'https://www.wazefit.com',
-      'https://app.wazefit.com',
     ]
     if (allowed.includes(origin)) return origin
 
@@ -31,8 +37,9 @@ export const corsMiddleware = cors({
     // Apex e subdominios de wazefit.com — white label dos experts
     if (host === 'wazefit.com' || host.endsWith('.wazefit.com')) return origin
 
-    // Qualquer projeto/preview Cloudflare Pages que comece com "wazefit"
-    if (/^([a-z0-9-]+\.)?wazefit[a-z0-9-]*\.pages\.dev$/.test(host)) return origin
+    // Backends internos legitimos (Pages projects ativos)
+    if (host === 'wazefit.pages.dev') return origin
+    if (host === 'wazefit-tenant.pages.dev' || host.endsWith('.wazefit-tenant.pages.dev')) return origin
 
     return null
   },

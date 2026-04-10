@@ -400,21 +400,24 @@ auth.post('/forgot-password', zValidator('json', forgotPasswordSchema), async (c
   const { email } = c.req.valid('json')
   const db = createDB(c.env.DB)
 
-  // Buscar expert ou aluno
+  // Buscar expert ou aluno (precisamos do tenant_id para montar a URL white label)
   let userId = ''
   let nome = ''
+  let tenantId = ''
   let role: 'expert' | 'aluno' = 'expert'
 
   const expert = await db.select().from(experts).where(eq(experts.email, email)).get()
   if (expert) {
     userId = expert.id
     nome = expert.nome
+    tenantId = expert.tenant_id
     role = 'expert'
   } else {
     const aluno = await db.select().from(alunos).where(eq(alunos.email, email)).get()
     if (aluno) {
       userId = aluno.id
       nome = aluno.nome
+      tenantId = aluno.tenant_id
       role = 'aluno'
     }
   }
@@ -428,12 +431,20 @@ auth.post('/forgot-password', zValidator('json', forgotPasswordSchema), async (c
   const resetToken = crypto.randomUUID().replace(/-/g, '')
   await c.env.KV_SESSIONS.put(
     `reset:${resetToken}`,
-    JSON.stringify({ userId, role, email }),
+    JSON.stringify({ userId, role, email, tenantId }),
     { expirationTtl: 3600 }, // 1 hora
   )
 
-  // Enviar email via queue
-  const resetLink = `https://wazefit-app.pages.dev/reset-password?token=${resetToken}`
+  // Construir link white label: usa o subdominio do tenant ou cai no
+  // wazefit.com central se nao encontrar slug.
+  let baseUrl = 'https://wazefit.com'
+  try {
+    const tenant = await db.select({ slug: tenants.slug }).from(tenants).where(eq(tenants.id, tenantId)).get()
+    if (tenant?.slug) baseUrl = `https://${tenant.slug}.wazefit.com`
+  } catch {
+    // mantem fallback wazefit.com
+  }
+  const resetLink = `${baseUrl}/reset-password?token=${resetToken}`
 
   try {
     await c.env.QUEUE_EMAILS.send({

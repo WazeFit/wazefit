@@ -67,7 +67,7 @@ dominiosRouter.post('/', zValidator('json', createDominioSchema), async (c) => {
         body: JSON.stringify({
           type: 'CNAME',
           name: dominio,
-          content: 'wazefit.pages.dev',
+          content: 'app.wazefit.com',
           proxied: true,
           ttl: 1, // Auto
         }),
