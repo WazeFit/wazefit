@@ -267,6 +267,71 @@ tenantRouter.get('/branding-by-host', async (c) => {
   })
 })
 
+// ── Slug do tenant ──
+// Reservados (nao podem ser usados como slug pra evitar conflito com subdominio do sistema)
+const RESERVED_SLUGS = new Set([
+  'www', 'api', 'app', 'admin', 'auth', 'login', 'register', 'dashboard',
+  'help', 'docs', 'support', 'suporte', 'contact', 'mail', 'email', 'static',
+  'cdn', 'assets', 'public', 'private', 'wazefit', 'system', 'root',
+  'ftp', 'pop', 'smtp', 'webmail', 'staging', 'dev', 'test', 'beta', 'demo',
+])
+
+const slugSchema = z
+  .string()
+  .min(3, 'Subdominio deve ter pelo menos 3 caracteres.')
+  .max(30, 'Subdominio deve ter no maximo 30 caracteres.')
+  .regex(/^[a-z0-9][a-z0-9-]*[a-z0-9]$/, 'Use apenas letras minusculas, numeros e hifens (sem hifen no inicio ou fim).')
+  .refine((s) => !RESERVED_SLUGS.has(s), 'Esse subdominio e reservado, escolha outro.')
+
+const updateSlugSchema = z.object({ slug: slugSchema })
+
+// GET /tenant/slug-available?slug=xxx — verifica disponibilidade (sem auth, rate-limited via login)
+tenantRouter.get('/slug-available', async (c) => {
+  const slug = (c.req.query('slug') ?? '').trim().toLowerCase()
+  const parse = slugSchema.safeParse(slug)
+  if (!parse.success) {
+    return c.json({ available: false, error: parse.error.issues[0]?.message ?? 'Slug invalido' })
+  }
+
+  const db = createDB(c.env.DB)
+  const existing = await db.select({ id: tenants.id }).from(tenants).where(eq(tenants.slug, slug)).get()
+  return c.json({ available: !existing, slug })
+})
+
+// PUT /tenant/slug — Atualizar slug do tenant (expert/owner only)
+tenantRouter.put('/slug', authMiddleware, expertOnly, zValidator('json', updateSlugSchema), async (c) => {
+  const { slug } = c.req.valid('json')
+  const tenantId = c.get('tenant_id')
+  const db = createDB(c.env.DB)
+
+  // Verificar se o slug ja esta em uso por outro tenant
+  const existing = await db
+    .select({ id: tenants.id })
+    .from(tenants)
+    .where(and(eq(tenants.slug, slug), isNull(tenants.deletado_em)))
+    .get()
+
+  if (existing && existing.id !== tenantId) {
+    return c.json({ error: 'Esse subdominio ja esta em uso. Escolha outro.', code: 409 }, 409)
+  }
+
+  if (existing && existing.id === tenantId) {
+    // Sem mudanca
+    return c.json({ slug, painel_url: `https://${slug}.wazefit.com` })
+  }
+
+  await db
+    .update(tenants)
+    .set({ slug, atualizado_em: now() })
+    .where(eq(tenants.id, tenantId))
+
+  return c.json({
+    slug,
+    painel_url: `https://${slug}.wazefit.com`,
+    aviso: 'O endereco do seu painel foi atualizado. Use o novo URL para acessar.',
+  })
+})
+
 // ── Lookup público: domínio → tenant slug ──
 // GET /api/v1/tenant/lookup?domain=app.minhaacademia.com
 tenantRouter.get('/lookup', async c => {

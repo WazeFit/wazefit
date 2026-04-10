@@ -1,15 +1,30 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Dumbbell, Loader2, ArrowRight } from 'lucide-react'
+import { CheckCircle2, Dumbbell, Loader2, ArrowRight, XCircle } from 'lucide-react'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.wazefit.com'
 
+function slugify(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
 export default function RegisterPage() {
   const router = useRouter()
-  const [form, setForm] = useState({ nome: '', email: '', senha: '', nome_negocio: '' })
+  const [form, setForm] = useState({ nome: '', email: '', senha: '', nome_negocio: '', slug: '' })
+  const [slugTouched, setSlugTouched] = useState(false)
+  const [slugStatus, setSlugStatus] = useState<'idle' | 'checking' | 'available' | 'taken' | 'invalid'>('idle')
+  const [slugMessage, setSlugMessage] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -17,8 +32,57 @@ export default function RegisterPage() {
     setForm((f) => ({ ...f, [key]: value }))
   }
 
+  // Auto-gerar slug a partir do nome do negocio (enquanto o usuario nao mexer)
+  useEffect(() => {
+    if (!slugTouched && form.nome_negocio) {
+      setForm((f) => ({ ...f, slug: slugify(f.nome_negocio) }))
+    }
+  }, [form.nome_negocio, slugTouched])
+
+  // Debounced check de disponibilidade
+  useEffect(() => {
+    if (!form.slug) {
+      setSlugStatus('idle')
+      setSlugMessage('')
+      return
+    }
+    if (form.slug.length < 3) {
+      setSlugStatus('invalid')
+      setSlugMessage('Mínimo 3 caracteres')
+      return
+    }
+    if (!/^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(form.slug)) {
+      setSlugStatus('invalid')
+      setSlugMessage('Use só letras minúsculas, números e hífens')
+      return
+    }
+
+    setSlugStatus('checking')
+    const handle = setTimeout(async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/v1/tenant/slug-available?slug=${encodeURIComponent(form.slug)}`)
+        const data = await res.json()
+        if (data.available) {
+          setSlugStatus('available')
+          setSlugMessage('Disponível')
+        } else {
+          setSlugStatus('taken')
+          setSlugMessage(data.error || 'Já está em uso')
+        }
+      } catch {
+        setSlugStatus('idle')
+        setSlugMessage('')
+      }
+    }, 350)
+    return () => clearTimeout(handle)
+  }, [form.slug])
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (slugStatus === 'taken' || slugStatus === 'invalid') {
+      setError('Escolha um subdomínio válido antes de continuar.')
+      return
+    }
     setLoading(true)
     setError('')
     try {
@@ -84,6 +148,51 @@ export default function RegisterPage() {
                 onChange={(e) => update('nome_negocio', e.target.value)}
               />
             </div>
+
+            <div>
+              <label className="text-sm font-medium mb-2 block">Endereço da sua plataforma</label>
+              <div className="flex items-center gap-0">
+                <input
+                  required
+                  className="input-base rounded-r-none"
+                  placeholder="suamarca"
+                  value={form.slug}
+                  onChange={(e) => {
+                    setSlugTouched(true)
+                    update('slug', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))
+                  }}
+                />
+                <div className="h-12 px-4 flex items-center bg-white/5 border border-l-0 border-border rounded-r-xl text-sm text-brand-400 font-mono whitespace-nowrap">
+                  .wazefit.com
+                </div>
+              </div>
+              <div className="mt-1.5 text-xs flex items-center gap-1.5 min-h-[18px]">
+                {slugStatus === 'checking' && (
+                  <>
+                    <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
+                    <span className="text-muted-foreground">Verificando…</span>
+                  </>
+                )}
+                {slugStatus === 'available' && (
+                  <>
+                    <CheckCircle2 className="w-3 h-3 text-brand-400" />
+                    <span className="text-brand-400">
+                      <span className="font-mono">{form.slug}.wazefit.com</span> {slugMessage.toLowerCase()}
+                    </span>
+                  </>
+                )}
+                {(slugStatus === 'taken' || slugStatus === 'invalid') && (
+                  <>
+                    <XCircle className="w-3 h-3 text-red-400" />
+                    <span className="text-red-400">{slugMessage}</span>
+                  </>
+                )}
+                {slugStatus === 'idle' && form.slug === '' && (
+                  <span className="text-muted-foreground">Esse será o link do seu painel</span>
+                )}
+              </div>
+            </div>
+
             <div>
               <label className="text-sm font-medium mb-2 block">Email</label>
               <input

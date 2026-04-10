@@ -23,6 +23,14 @@ const auth = new Hono<{ Bindings: Env; Variables: AuthVariables }>()
 
 // ── Schemas de validação ──
 
+// Slugs reservados (nao podem ser usados como subdominio)
+const RESERVED_SLUGS = new Set([
+  'www', 'api', 'app', 'admin', 'auth', 'login', 'register', 'dashboard',
+  'help', 'docs', 'support', 'suporte', 'contact', 'mail', 'email', 'static',
+  'cdn', 'assets', 'public', 'private', 'wazefit', 'system', 'root',
+  'ftp', 'pop', 'smtp', 'webmail', 'staging', 'dev', 'test', 'beta', 'demo',
+])
+
 const registerSchema = z.object({
   nome: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres.'),
   email: z.string().email('Email inválido.'),
@@ -32,6 +40,14 @@ const registerSchema = z.object({
     .regex(/[A-Z]/, 'Senha deve ter pelo menos uma letra maiúscula.')
     .regex(/[0-9]/, 'Senha deve ter pelo menos um número.'),
   nome_negocio: z.string().min(2, 'Nome do negócio deve ter pelo menos 2 caracteres.'),
+  // Subdominio opcional. Se nao vier, e gerado a partir do nome do negocio.
+  slug: z
+    .string()
+    .min(3, 'Subdominio deve ter pelo menos 3 caracteres.')
+    .max(30, 'Subdominio deve ter no maximo 30 caracteres.')
+    .regex(/^[a-z0-9][a-z0-9-]*[a-z0-9]$/, 'Use apenas letras minusculas, numeros e hifens.')
+    .refine((s) => !RESERVED_SLUGS.has(s), 'Esse subdominio e reservado, escolha outro.')
+    .optional(),
   telefone: z.string().optional(),
   especialidade: z.string().optional(),
 })
@@ -63,13 +79,28 @@ auth.post('/register', registerRateLimit, zValidator('json', registerSchema), as
   const tenantId = generateId()
   const expertId = generateId()
   const senhaHash = await hashPassword(body.senha)
-  const slug = slugify(body.nome_negocio)
   const timestamp = now()
 
-  // Verificar se slug já existe e gerar alternativa
+  // Definir slug:
+  // 1. Se o usuario informou um slug explicito no cadastro, usa ele (ja validado pelo zod)
+  // 2. Senao, gera a partir do nome do negocio
+  let slug = body.slug ?? slugify(body.nome_negocio)
+
+  // Verificar disponibilidade — se ja existe, da erro caso o usuario tenha
+  // escolhido manualmente, ou gera alternativa caso seja auto-gerado
   const existingSlug = await db.select({ id: tenants.id }).from(tenants).where(eq(tenants.slug, slug)).get()
 
-  const finalSlug = existingSlug ? `${slug}-${Date.now().toString(36)}` : slug
+  let finalSlug: string
+  if (existingSlug) {
+    if (body.slug) {
+      // Usuario pediu esse slug explicitamente — retorna erro
+      return c.json({ error: 'Esse subdominio ja esta em uso. Escolha outro.', code: 409 }, 409)
+    }
+    // Auto-gerado — adiciona sufixo unico
+    finalSlug = `${slug}-${Date.now().toString(36)}`
+  } else {
+    finalSlug = slug
+  }
 
   // Criar tenant + expert em batch
   await db.batch([

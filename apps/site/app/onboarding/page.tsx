@@ -85,8 +85,17 @@ function loadState(): OnboardingData {
   if (typeof window === 'undefined') return DEFAULT_DATA
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return DEFAULT_DATA
-    return { ...DEFAULT_DATA, ...JSON.parse(raw) }
+    const fromStorage = raw ? JSON.parse(raw) : {}
+    const data = { ...DEFAULT_DATA, ...fromStorage }
+
+    // Bridge: se o usuario acabou de se cadastrar, o slug vem em wf_tenant_slug
+    // e nao no STORAGE_KEY do onboarding. Adota como valor inicial pra evitar
+    // que ele troque sem querer.
+    if (!data.slug || data.slug === DEFAULT_DATA.slug) {
+      const fromRegister = localStorage.getItem('wf_tenant_slug')
+      if (fromRegister) data.slug = fromRegister
+    }
+    return data
   } catch {
     return DEFAULT_DATA
   }
@@ -178,7 +187,7 @@ function Stepper({ step }: { step: number }) {
 }
 
 // ═════════════════════════════════════════════════════════════════
-// STEP 1 — Marca (logo upload, nome, tagline)
+// STEP 1 — Marca (logo upload, nome, tagline, subdominio)
 // ═════════════════════════════════════════════════════════════════
 function StepMarca({
   data,
@@ -192,6 +201,99 @@ function StepMarca({
   const fileRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState('')
+
+  // Slug availability check (debounced)
+  const [slugStatus, setSlugStatus] = useState<'idle' | 'checking' | 'available' | 'taken' | 'invalid'>('idle')
+  const [slugMessage, setSlugMessage] = useState('')
+  const [slugSaving, setSlugSaving] = useState(false)
+  const [slugSavedAs, setSlugSavedAs] = useState<string | null>(null)
+
+  // Inicializa slug salvo a partir do que ja esta no servidor (vem do cadastro)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const savedSlug = localStorage.getItem('wf_tenant_slug')
+    if (savedSlug && !slugSavedAs) setSlugSavedAs(savedSlug)
+  }, [slugSavedAs])
+
+  useEffect(() => {
+    const slug = data.slug
+    if (!slug || slug === slugSavedAs) {
+      setSlugStatus('idle')
+      setSlugMessage('')
+      return
+    }
+    if (slug.length < 3) {
+      setSlugStatus('invalid')
+      setSlugMessage('Mínimo 3 caracteres')
+      return
+    }
+    if (!/^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(slug)) {
+      setSlugStatus('invalid')
+      setSlugMessage('Use só letras minúsculas, números e hífens')
+      return
+    }
+
+    setSlugStatus('checking')
+    const handle = setTimeout(async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/v1/tenant/slug-available?slug=${encodeURIComponent(slug)}`)
+        const data = await res.json()
+        if (data.available) {
+          setSlugStatus('available')
+          setSlugMessage('Disponível')
+        } else {
+          setSlugStatus('taken')
+          setSlugMessage(data.error || 'Já está em uso')
+        }
+      } catch {
+        setSlugStatus('idle')
+      }
+    }, 350)
+    return () => clearTimeout(handle)
+  }, [data.slug, slugSavedAs])
+
+  async function persistSlugIfNeeded(): Promise<boolean> {
+    if (!data.slug || data.slug === slugSavedAs) return true
+    if (slugStatus === 'taken' || slugStatus === 'invalid') return false
+
+    const token = typeof window !== 'undefined' ? localStorage.getItem('wf_token') : null
+    if (!token) {
+      // Sem token (acesso direto a /onboarding sem cadastro) — apenas guarda local
+      setSlugSavedAs(data.slug)
+      return true
+    }
+
+    setSlugSaving(true)
+    try {
+      const res = await fetch(`${API_URL}/api/v1/tenant/slug`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ slug: data.slug }),
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        setUploadError(json?.error || 'Erro ao atualizar subdomínio')
+        return false
+      }
+      setSlugSavedAs(data.slug)
+      localStorage.setItem('wf_tenant_slug', data.slug)
+      return true
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'Erro de conexão ao salvar subdomínio')
+      return false
+    } finally {
+      setSlugSaving(false)
+    }
+  }
+
+  async function handleNext() {
+    setUploadError('')
+    const ok = await persistSlugIfNeeded()
+    if (ok) onNext()
+  }
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -258,7 +360,7 @@ function StepMarca({
           </div>
 
           <div>
-            <label className="text-sm font-medium mb-2 block">Subdomínio</label>
+            <label className="text-sm font-medium mb-2 block">Endereço da sua plataforma</label>
             <div className="flex items-center gap-0">
               <input
                 className="input-base rounded-r-none"
@@ -266,16 +368,37 @@ function StepMarca({
                 value={data.slug}
                 onChange={(e) => update('slug', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
               />
-              <div className="h-12 px-4 flex items-center bg-white/5 border border-l-0 border-border rounded-r-xl text-sm text-brand-400 font-mono">
+              <div className="h-12 px-4 flex items-center bg-white/5 border border-l-0 border-border rounded-r-xl text-sm text-brand-400 font-mono whitespace-nowrap">
                 .wazefit.com
               </div>
             </div>
-            <p className="text-xs text-muted-foreground mt-1.5">
-              Seus alunos acessarão em{' '}
-              <span className="text-brand-400 font-mono">
-                {data.slug || 'suamarca'}.wazefit.com
-              </span>
-            </p>
+            <div className="mt-1.5 text-xs flex items-center gap-1.5 min-h-[18px]">
+              {slugStatus === 'checking' && (
+                <>
+                  <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
+                  <span className="text-muted-foreground">Verificando…</span>
+                </>
+              )}
+              {slugStatus === 'available' && (
+                <>
+                  <Check className="w-3 h-3 text-brand-400" />
+                  <span className="text-brand-400">
+                    <span className="font-mono">{data.slug}.wazefit.com</span> {slugMessage.toLowerCase()}
+                  </span>
+                </>
+              )}
+              {(slugStatus === 'taken' || slugStatus === 'invalid') && (
+                <span className="text-red-400">{slugMessage}</span>
+              )}
+              {slugStatus === 'idle' && data.slug === slugSavedAs && data.slug && (
+                <span className="text-muted-foreground">
+                  Painel atual: <span className="text-brand-400 font-mono">{data.slug}.wazefit.com</span>
+                </span>
+              )}
+              {slugStatus === 'idle' && !data.slug && (
+                <span className="text-muted-foreground">Esse será o link do seu painel</span>
+              )}
+            </div>
           </div>
 
           <div>
@@ -350,11 +473,13 @@ function StepMarca({
           <div className="flex justify-end">
             <button
               type="button"
-              onClick={onNext}
-              disabled={!canContinue}
+              onClick={handleNext}
+              disabled={!canContinue || slugStatus === 'taken' || slugStatus === 'invalid' || slugStatus === 'checking' || slugSaving}
               className="btn-primary inline-flex items-center gap-2"
             >
-              Continuar <ArrowRight className="w-4 h-4" />
+              {slugSaving && <Loader2 className="w-4 h-4 animate-spin" />}
+              Continuar
+              {!slugSaving && <ArrowRight className="w-4 h-4" />}
             </button>
           </div>
         </div>
