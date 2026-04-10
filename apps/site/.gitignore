@@ -1,0 +1,5 @@
+node_modules/
+.next/
+_old_out_backup/
+_serve.mjs.bak
+*.tsbuildinfo
