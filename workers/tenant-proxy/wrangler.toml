@@ -8,5 +8,10 @@ routes = [
   { pattern = "*.wazefit.com/*", zone_name = "wazefit.com" }
 ]
 
+# ── KV: lookup de tenants para validar slug antes de fazer proxy ──
+[[kv_namespaces]]
+binding = "KV_TENANTS"
+id = "4a34005c31214145b371fad7f1c91b56"
+
 [vars]
 ENVIRONMENT = "production"

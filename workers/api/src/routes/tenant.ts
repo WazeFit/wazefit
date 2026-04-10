@@ -70,8 +70,9 @@ tenantRouter.post('/branding/upload', authMiddleware, expertOnly, async (c) => {
     httpMetadata: { contentType: file.type },
   })
 
-  // Construir URL pública (via media proxy ou R2 public)
-  const publicUrl = `/api/v1/media/file/${key}`
+  // Construir URL absoluta (via media proxy publico)
+  const reqUrl = new URL(c.req.url)
+  const publicUrl = `${reqUrl.protocol}//${reqUrl.host}/api/v1/media/file/${key}`
 
   // Salvar na tenant_config
   const db = createDB(c.env.DB)
@@ -102,15 +103,22 @@ const BRANDING_KEYS = [
   'nome_exibicao',
   'favicon_url',
   'descricao',
+  'fonte',
+  'nome',
+  'tagline',
 ] as const
 
 const updateConfigSchema = z.object({
-  cor_primaria: z.string().optional(),
-  cor_secundaria: z.string().optional(),
-  logo_url: z.string().url().optional(),
-  nome_exibicao: z.string().min(1).optional(),
-  favicon_url: z.string().url().optional(),
-  descricao: z.string().optional(),
+  cor_primaria: z.string().nullable().optional(),
+  cor_secundaria: z.string().nullable().optional(),
+  // Aceita URL absoluta OU relativa (/api/v1/media/...) OU data URL (fallback)
+  logo_url: z.string().nullable().optional(),
+  nome_exibicao: z.string().min(1).nullable().optional(),
+  favicon_url: z.string().nullable().optional(),
+  descricao: z.string().nullable().optional(),
+  fonte: z.string().min(1).max(60).nullable().optional(),
+  nome: z.string().min(1).nullable().optional(),
+  tagline: z.string().nullable().optional(),
 })
 
 const brandingQuery = z.object({
@@ -140,11 +148,22 @@ tenantRouter.put('/config', authMiddleware, expertOnly, zValidator('json', updat
   const db = createDB(c.env.DB)
   const timestamp = now()
 
+  // valor === null significa "remover" essa chave
   const entries = Object.entries(body).filter(([, v]) => v !== undefined)
 
   for (const [chave, valor] of entries) {
     const existing = await db.select({ id: tenantConfig.id }).from(tenantConfig)
       .where(and(eq(tenantConfig.tenant_id, tenantId), eq(tenantConfig.chave, chave))).get()
+
+    if (valor === null) {
+      // Limpar valor (mantem o registro pra poder ressetar)
+      if (existing) {
+        await db.update(tenantConfig)
+          .set({ valor: null as unknown as string, atualizado_em: timestamp })
+          .where(eq(tenantConfig.id, existing.id))
+      }
+      continue
+    }
 
     if (existing) {
       await db.update(tenantConfig)
@@ -320,10 +339,28 @@ tenantRouter.put('/slug', authMiddleware, expertOnly, zValidator('json', updateS
     return c.json({ slug, painel_url: `https://${slug}.wazefit.com` })
   }
 
+  // Capturar slug antigo para remover do KV
+  const current = await db.select({ slug: tenants.slug, nome: tenants.nome }).from(tenants).where(eq(tenants.id, tenantId)).get()
+  const oldSlug = current?.slug
+  const tenantNome = current?.nome ?? ''
+
   await db
     .update(tenants)
     .set({ slug, atualizado_em: now() })
     .where(eq(tenants.id, tenantId))
+
+  // Sincronizar KV_TENANTS (lookup do tenant-proxy)
+  try {
+    if (oldSlug && oldSlug !== slug) {
+      await c.env.KV_TENANTS.delete(oldSlug)
+    }
+    await c.env.KV_TENANTS.put(
+      slug,
+      JSON.stringify({ tenant_id: tenantId, nome: tenantNome, atualizado_em: now() }),
+    )
+  } catch (err) {
+    console.error('KV_TENANTS sync failed:', err)
+  }
 
   return c.json({
     slug,

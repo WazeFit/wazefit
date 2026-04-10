@@ -149,6 +149,16 @@ auth.post('/register', registerRateLimit, zValidator('json', registerSchema), as
     { expirationTtl: 7 * 24 * 60 * 60 },
   )
 
+  // Registrar slug em KV_TENANTS (lookup do tenant-proxy worker)
+  try {
+    await c.env.KV_TENANTS.put(
+      finalSlug,
+      JSON.stringify({ tenant_id: tenantId, nome: body.nome_negocio, criado_em: timestamp }),
+    )
+  } catch (err) {
+    console.error('KV_TENANTS write failed:', err)
+  }
+
   // Disparar email de boas-vindas (assíncrono via queue, não bloqueia o cadastro)
   // O worker wazefit-email consome QUEUE_EMAILS e renderiza o template "welcome".
   try {

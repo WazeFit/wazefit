@@ -312,21 +312,38 @@ function StepMarca({
 
     setUploading(true)
     try {
-      // Fallback: converter para data URL e mostrar preview imediatamente.
-      // Quando o usuário criar a conta, o tenant enviará o arquivo real para
-      // R2 via /api/v1/media. Aqui garantimos que o preview atualiza na hora.
-      const reader = new FileReader()
-      reader.onload = () => {
-        update('logoUrl', reader.result as string)
-        setUploading(false)
+      const token = typeof window !== 'undefined' ? localStorage.getItem('wf_token') : null
+      if (token) {
+        // Upload real para R2 via /api/v1/tenant/branding/upload
+        const form = new FormData()
+        form.append('tipo', 'logo')
+        form.append('file', file)
+        const res = await fetch(`${API_URL}/api/v1/tenant/branding/upload`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: form,
+        })
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}))
+          throw new Error(data?.error || 'Erro ao enviar a logo')
+        }
+        const data = (await res.json()) as { url: string }
+        update('logoUrl', data.url)
+      } else {
+        // Sem token (acesso direto a /onboarding) — usa data URL local
+        const reader = new FileReader()
+        await new Promise<void>((resolve, reject) => {
+          reader.onload = () => {
+            update('logoUrl', reader.result as string)
+            resolve()
+          }
+          reader.onerror = () => reject(new Error('Não foi possível ler o arquivo.'))
+          reader.readAsDataURL(file)
+        })
       }
-      reader.onerror = () => {
-        setUploadError('Não foi possível ler o arquivo.')
-        setUploading(false)
-      }
-      reader.readAsDataURL(file)
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : 'Erro ao enviar a imagem.')
+    } finally {
       setUploading(false)
     }
   }

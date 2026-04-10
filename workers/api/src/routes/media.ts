@@ -14,7 +14,8 @@ import { authMiddleware } from '../middleware/auth'
 
 const mediaRouter = new Hono<{ Bindings: Env; Variables: AuthVariables }>()
 
-mediaRouter.use('*', authMiddleware)
+// Auth e aplicado individualmente nos handlers que precisam.
+// O GET /file/* tem auth condicional (publico para branding).
 
 // ── Tipos e extensões permitidas ──
 
@@ -55,7 +56,7 @@ const confirmSchema = z.object({
 // ═══════════════════════════════════════════════════════════════
 // GET /media/upload-url — Gerar presigned URL para upload R2
 // ═══════════════════════════════════════════════════════════════
-mediaRouter.get('/upload-url', zValidator('query', uploadUrlQuerySchema), async (c) => {
+mediaRouter.get('/upload-url', authMiddleware, zValidator('query', uploadUrlQuerySchema), async (c) => {
   const { tipo, filename, content_type } = c.req.valid('query')
   const tenantId = c.get('tenant_id')
 
@@ -116,7 +117,7 @@ mediaRouter.get('/upload-url', zValidator('query', uploadUrlQuerySchema), async 
 // ═══════════════════════════════════════════════════════════════
 // POST /media/confirm — Confirmar upload e salvar referência
 // ═══════════════════════════════════════════════════════════════
-mediaRouter.post('/confirm', zValidator('json', confirmSchema), async (c) => {
+mediaRouter.post('/confirm', authMiddleware, zValidator('json', confirmSchema), async (c) => {
   const body = c.req.valid('json')
   const tenantId = c.get('tenant_id')
 
@@ -164,7 +165,7 @@ mediaRouter.post('/confirm', zValidator('json', confirmSchema), async (c) => {
 // ═══════════════════════════════════════════════════════════════
 // PUT /media/upload/* — Proxy upload para R2
 // ═══════════════════════════════════════════════════════════════
-mediaRouter.put('/upload/*', async (c) => {
+mediaRouter.put('/upload/*', authMiddleware, async (c) => {
   const tenantId = c.get('tenant_id')
 
   // Verificar se R2 está disponível

@@ -100,7 +100,7 @@ Quando um expert adiciona um domínio personalizado (ex: `app.minhaacademia.com`
 
 1. **Deploy:**
    ```bash
-   cd apps/api
+   cd workers/api
    pnpm wrangler deploy
    ```
 
@@ -136,7 +136,7 @@ VITE_API_URL=https://api.wazefit.com
 VITE_API_URL=http://localhost:8787
 ```
 
-### Backend (`apps/api/wrangler.toml`)
+### Backend (`workers/api/wrangler.toml`)
 
 ```toml
 [env.production]
