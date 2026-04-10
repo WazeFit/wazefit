@@ -5,6 +5,7 @@ import { cobrancaPendente } from './templates/cobranca-pendente'
 import { cobrancaVencida } from './templates/cobranca-vencida'
 import { treinoNovo } from './templates/treino-novo'
 import { lembreteTreino } from './templates/lembrete-treino'
+import { welcome } from './templates/welcome'
 
 interface Env {
   SENDGRID_API_KEY: string
@@ -33,6 +34,8 @@ function renderTemplate(type: string, data: Record<string, any>): { subject: str
       return treinoNovo(data as any)
     case 'lembrete_treino':
       return lembreteTreino(data as any)
+    case 'welcome':
+      return welcome(data as any)
     default:
       throw new Error(`Unknown email template type: ${type}`)
   }

@@ -118,6 +118,26 @@ auth.post('/register', registerRateLimit, zValidator('json', registerSchema), as
     { expirationTtl: 7 * 24 * 60 * 60 },
   )
 
+  // Disparar email de boas-vindas (assíncrono via queue, não bloqueia o cadastro)
+  // O worker wazefit-email consome QUEUE_EMAILS e renderiza o template "welcome".
+  try {
+    const painelUrl = `https://${finalSlug}.wazefit.com`
+    await c.env.QUEUE_EMAILS.send({
+      type: 'welcome',
+      to: body.email,
+      data: {
+        nome: body.nome,
+        nome_negocio: body.nome_negocio,
+        email: body.email,
+        painel_url: painelUrl,
+        reset_url: `${painelUrl}/forgot-password`,
+      },
+    })
+  } catch (err) {
+    // Não falha o cadastro se a queue estiver indisponível.
+    console.error('welcome email enqueue failed:', err)
+  }
+
   return c.json(
     {
       user: {
