@@ -244,6 +244,9 @@ auth.post('/login', loginRateLimit, zValidator('json', loginSchema), async (c) =
       { expirationTtl: 7 * 24 * 60 * 60 },
     )
 
+    // Buscar dados do tenant para redirect white-label (slug) e exibicao (nome, plano)
+    const tenant = await db.select().from(tenants).where(eq(tenants.id, expert.tenant_id)).get()
+
     return c.json({
       user: {
         id: expert.id,
@@ -254,6 +257,9 @@ auth.post('/login', loginRateLimit, zValidator('json', loginSchema), async (c) =
       },
       tenant: {
         id: expert.tenant_id,
+        nome: tenant?.nome,
+        slug: tenant?.slug,
+        plano: tenant?.plano,
       },
       access_token: tokens.accessToken,
       refresh_token: tokens.refreshToken,
@@ -296,6 +302,9 @@ auth.post('/login', loginRateLimit, zValidator('json', loginSchema), async (c) =
       { expirationTtl: 7 * 24 * 60 * 60 },
     )
 
+    // Buscar dados do tenant para redirect white-label (slug) e exibicao (nome, plano)
+    const tenant = await db.select().from(tenants).where(eq(tenants.id, aluno.tenant_id)).get()
+
     return c.json({
       user: {
         id: aluno.id,
@@ -306,6 +315,9 @@ auth.post('/login', loginRateLimit, zValidator('json', loginSchema), async (c) =
       },
       tenant: {
         id: aluno.tenant_id,
+        nome: tenant?.nome,
+        slug: tenant?.slug,
+        plano: tenant?.plano,
       },
       access_token: tokens.accessToken,
       refresh_token: tokens.refreshToken,
