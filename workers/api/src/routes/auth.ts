@@ -9,7 +9,7 @@
 import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
-import { eq, and } from 'drizzle-orm'
+import { eq, and, sql } from 'drizzle-orm'
 import type { Env, AuthVariables } from '../types'
 import { createDB } from '../db/client'
 import { tenants, experts, alunos } from '../db/schema'
@@ -33,7 +33,7 @@ const RESERVED_SLUGS = new Set([
 
 const registerSchema = z.object({
   nome: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres.'),
-  email: z.string().email('Email inválido.'),
+  email: z.string().trim().toLowerCase().pipe(z.string().email('Email inválido.')),
   senha: z
     .string()
     .min(8, 'Senha deve ter pelo menos 8 caracteres.')
@@ -53,7 +53,7 @@ const registerSchema = z.object({
 })
 
 const loginSchema = z.object({
-  email: z.string().email('Email inválido.'),
+  email: z.string().trim().toLowerCase().pipe(z.string().email('Email inválido.')),
   senha: z.string().min(1, 'Senha é obrigatória.'),
 })
 
@@ -68,8 +68,12 @@ auth.post('/register', registerRateLimit, zValidator('json', registerSchema), as
   const body = c.req.valid('json')
   const db = createDB(c.env.DB)
 
-  // Verificar se email já existe
-  const existing = await db.select({ id: experts.id }).from(experts).where(eq(experts.email, body.email)).get()
+  // Verificar se email já existe (case-insensitive)
+  const existing = await db
+    .select({ id: experts.id })
+    .from(experts)
+    .where(sql`LOWER(${experts.email}) = LOWER(${body.email})`)
+    .get()
 
   if (existing) {
     return c.json({ error: 'Email já cadastrado.', code: 409 }, 409)
@@ -208,11 +212,11 @@ auth.post('/login', loginRateLimit, zValidator('json', loginSchema), async (c) =
   const { email, senha } = c.req.valid('json')
   const db = createDB(c.env.DB)
 
-  // Tentar expert primeiro
+  // Tentar expert primeiro (email case-insensitive)
   const expert = await db
     .select()
     .from(experts)
-    .where(and(eq(experts.email, email), eq(experts.ativo, true)))
+    .where(and(sql`LOWER(${experts.email}) = LOWER(${email})`, eq(experts.ativo, true)))
     .get()
 
   if (expert) {
@@ -267,11 +271,11 @@ auth.post('/login', loginRateLimit, zValidator('json', loginSchema), async (c) =
     })
   }
 
-  // Tentar aluno
+  // Tentar aluno (email case-insensitive)
   const aluno = await db
     .select()
     .from(alunos)
-    .where(and(eq(alunos.email, email), eq(alunos.ativo, true)))
+    .where(and(sql`LOWER(${alunos.email}) = LOWER(${email})`, eq(alunos.ativo, true)))
     .get()
 
   if (aluno) {
@@ -446,7 +450,7 @@ auth.get('/me', authMiddleware, async (c) => {
 // POST /auth/forgot-password — Solicitar reset de senha
 // ═══════════════════════════════════════════════════════════════
 const forgotPasswordSchema = z.object({
-  email: z.string().email('Email invalido.'),
+  email: z.string().trim().toLowerCase().pipe(z.string().email('Email invalido.')),
 })
 
 auth.post('/forgot-password', zValidator('json', forgotPasswordSchema), async (c) => {
@@ -459,14 +463,22 @@ auth.post('/forgot-password', zValidator('json', forgotPasswordSchema), async (c
   let tenantId = ''
   let role: 'expert' | 'aluno' = 'expert'
 
-  const expert = await db.select().from(experts).where(eq(experts.email, email)).get()
+  const expert = await db
+    .select()
+    .from(experts)
+    .where(sql`LOWER(${experts.email}) = LOWER(${email})`)
+    .get()
   if (expert) {
     userId = expert.id
     nome = expert.nome
     tenantId = expert.tenant_id
     role = 'expert'
   } else {
-    const aluno = await db.select().from(alunos).where(eq(alunos.email, email)).get()
+    const aluno = await db
+      .select()
+      .from(alunos)
+      .where(sql`LOWER(${alunos.email}) = LOWER(${email})`)
+      .get()
     if (aluno) {
       userId = aluno.id
       nome = aluno.nome
